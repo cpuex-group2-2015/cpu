@@ -15,7 +15,7 @@ end condition_register;
 
 architecture struct of condition_register is
 
-	signal cr : std_logic_vector (3 downto 0);
+	signal cr : std_logic_vector (3 downto 0) := "0000";
 
 begin
 

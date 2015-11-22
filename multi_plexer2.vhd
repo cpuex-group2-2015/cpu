@@ -14,7 +14,7 @@ end multi_plexer2;
 architecture struct of multi_plexer2 is
 begin
 
-	mux_out <= mux_in0 when sel = '0'
-	else       mux_in1;
+	mux_out <= mux_in1 when sel = '1'
+	else       mux_in0;
 
 end;

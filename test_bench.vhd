@@ -186,6 +186,8 @@ architecture testbench of testbench is
 
 	signal instruction_address : std_logic_vector (13 downto 0) := (others => '0');
 	signal instruction         : std_logic_vector (31 downto 0) := (others => '0');
+	signal prev_instruction    : std_logic_vector (31 downto 0) := (others => '0');
+	signal imem_out            : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal incremented_instruction_address : std_logic_vector (31 downto 0) := (others => '0');
 	signal next_instruction_address        : std_logic_vector (31 downto 0) := (others => '0');
@@ -262,7 +264,7 @@ begin
 	imem : instruction_memory port map (
 		clk					=> simclk,
 		instruction_address	=> instruction_address,
-		instruction			=> instruction
+		instruction			=> imem_out
 	);
 
 	gpr : general_purpose_registers port map (
@@ -417,10 +419,12 @@ begin
 
 	mux_pc_src2 : multi_plexer2 port map (
 		sel		=> pc_src2,
-		mux_in0	=> next_instruction_address,
-		mux_in1	=> pc_out,
-		mux_out	=> pc_in
+		mux_in0	=> imem_out,
+		mux_in1	=> prev_instruction,
+		mux_out	=> instruction
 	);
+
+	pc_in <= next_instruction_address;
 
 	instruction_address <= pc_out(13 downto 0);
 	gpr_read_reg_num1 <= instruction(20 downto 16);
@@ -433,6 +437,13 @@ begin
 	ctr_in <= alu_out;
 	dmem_data_address <= alu_out(19 downto 0);
 	dmem_write_data <= gpr_read_data3;
+
+	process(simclk)
+	begin
+		if (rising_edge(simclk)) then
+			prev_instruction <= instruction;
+		end if;
+	end process;
 
 	-- generate clock for the simulation
 	clockgen : process

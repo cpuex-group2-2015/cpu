@@ -116,12 +116,14 @@ begin
 				lr_src          <= '0';
 			end if;
 
-			if (wait_count = "01") then
-				wait_count <= "00";
-				pc_src2    <= '0';
-			else
-				wait_count <= wait_count + 1;
-				pc_src2    <= '1';
+			if (rising_edge(clk)) then
+				if (wait_count = "01") then			-- 2clk 目
+					wait_count <= "00";
+					pc_src2    <= '0';
+				else								-- 1clk 目
+					wait_count <= wait_count + 1;
+					pc_src2    <= '1';
+				end if;
 			end if;
 
 		when "010010" =>										-- 18 b, bl
@@ -147,12 +149,14 @@ begin
 				lr_src          <= '0';
 			end if;
 
-			if (wait_count = "01") then
-				wait_count <= "00";
-				pc_src2    <= '0';
-			else
-				wait_count <= wait_count + 1;
-				pc_src2    <= '1';
+			if (rising_edge(clk)) then
+				if (wait_count = "01") then			-- 2clk 目
+					wait_count <= "00";
+					pc_src2    <= '0';
+				else								-- 1clk 目
+					wait_count <= wait_count + 1;
+					pc_src2    <= '1';
+				end if;
 			end if;
 
 		when "010011" =>										-- 19 blr
@@ -171,12 +175,14 @@ begin
 			lr_src            <= '-';
 			pc_src            <= "01";
 
-			if (wait_count = "01") then
-				wait_count <= "00";
-				pc_src2    <= '0';
-			else
-				wait_count <= wait_count + 1;
-				pc_src2    <= '1';
+			if (rising_edge(clk)) then
+				if (wait_count = "01") then			-- 2clk 目
+					wait_count <= "00";
+					pc_src2    <= '0';
+				else								-- 1clk 目
+					wait_count <= wait_count + 1;
+					pc_src2    <= '1';
+				end if;
 			end if;
 
 		when "010100" =>										-- 20 bctr, bctrl
@@ -202,12 +208,14 @@ begin
 				lr_src          <= '0';
 			end if;
 
-			if (wait_count = "01") then
-				wait_count <= "00";
-				pc_src2    <= '0';
-			else
-				wait_count <= wait_count + 1;
-				pc_src2    <= '1';
+			if (rising_edge(clk)) then
+				if (wait_count = "01") then			-- 2clk 目
+					wait_count <= "00";
+					pc_src2    <= '0';
+				else								-- 1clk 目
+					wait_count <= wait_count + 1;
+					pc_src2    <= '1';
+				end if;
 			end if;
 
 		when "011001" =>										-- 25 ori

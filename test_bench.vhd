@@ -18,7 +18,7 @@ architecture testbench of testbench is
 	component instruction_memory is
 		port (
 			clk					: in  std_logic;
-			instruction_address	: in  std_logic_vector (13 downto 0);
+			instruction_address	: in  std_logic_vector (31 downto 0);
 			instruction			: out std_logic_vector (31 downto 0)
 		);
 	end component;
@@ -146,8 +146,8 @@ architecture testbench of testbench is
 			alu_src           : out std_logic;
 			gpr_data_src      : out std_logic_vector (1 downto 0);
 			lr_src            : out std_logic;
-			pc_src            : out std_logic_vector (1 downto 0);
-			pc_src2           : out std_logic
+			ia_src            : out std_logic_vector (1 downto 0);
+			ia_src2           : out std_logic
 		);
 	end component;
 
@@ -184,13 +184,12 @@ architecture testbench of testbench is
 	signal pc_in  : std_logic_vector (31 downto 0) := (others => '0');
 	signal pc_out : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal instruction_address : std_logic_vector (13 downto 0) := (others => '0');
+	signal instruction_address : std_logic_vector (31 downto 0) := (others => '0');
 	signal instruction         : std_logic_vector (31 downto 0) := (others => '0');
-	signal prev_instruction    : std_logic_vector (31 downto 0) := (others => '0');
-	signal imem_out            : std_logic_vector (31 downto 0) := (others => '0');
-
-	signal incremented_instruction_address : std_logic_vector (31 downto 0) := (others => '0');
-	signal next_instruction_address        : std_logic_vector (31 downto 0) := (others => '0');
+	
+	signal incremented_ia : std_logic_vector (31 downto 0) := (others => '0');
+	signal selected_ia    : std_logic_vector (31 downto 0) := (others => '0');
+	signal incremented_selected_ia    : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal gpr_write_enable  : std_logic                      := '0';
 	signal gpr_read_reg_num1 : std_logic_vector (4 downto 0)  := (others => '0');
@@ -249,8 +248,8 @@ architecture testbench of testbench is
 	signal alu_src      : std_logic                     := '0';
 	signal gpr_data_src : std_logic_vector (1 downto 0) := (others => '0');
 	signal lr_src       : std_logic                     := '0';
-	signal pc_src       : std_logic_vector (1 downto 0) := (others => '0');
-	signal pc_src2      : std_logic                     := '0';
+	signal ia_src       : std_logic_vector (1 downto 0) := (others => '0');
+	signal ia_src2      : std_logic                     := '0';
 
 begin
 
@@ -264,7 +263,7 @@ begin
 	imem : instruction_memory port map (
 		clk					=> simclk,
 		instruction_address	=> instruction_address,
-		instruction			=> imem_out
+		instruction			=> instruction
 	);
 
 	gpr : general_purpose_registers port map (
@@ -373,16 +372,16 @@ begin
 		alu_src           => alu_src,
 		gpr_data_src      => gpr_data_src,
 		lr_src            => lr_src,
-		pc_src            => pc_src,
-		pc_src2           => pc_src2
+		ia_src            => ia_src,
+		ia_src2           => ia_src2
 	);
 
 	-- data path
 
-	pc_inclementer : adder port map (
+	ia_inclementer : adder port map (
 		adder_a	=> pc_out,
 		adder_b	=> "00000000000000000000000000000001",
-		adder_s	=> incremented_instruction_address
+		adder_s	=> incremented_ia
 	);
 
 	mux_alu_src : multi_plexer2 port map (
@@ -403,30 +402,40 @@ begin
 
 	mux_lr_src : multi_plexer2 port map (
 		sel		=> lr_src,
-		mux_in0	=> incremented_instruction_address,
+		mux_in0	=> incremented_ia,
 		mux_in1	=> alu_out,
 		mux_out	=> lr_in
 	);
 
-	mux_pc_src : multi_plexer4 port map (
-		sel		=> pc_src,
-		mux_in0	=> incremented_instruction_address,
+	mux_ia_src : multi_plexer4 port map (
+		sel		=> ia_src,
+		mux_in0	=> incremented_ia,
 		mux_in1	=> lr_out,
 		mux_in2	=> ctr_out,
 		mux_in3	=> ext_out,
-		mux_out	=> next_instruction_address
+		mux_out	=> selected_ia
 	);
 
-	mux_pc_src2 : multi_plexer2 port map (
-		sel		=> pc_src2,
-		mux_in0	=> imem_out,
-		mux_in1	=> prev_instruction,
-		mux_out	=> instruction
+	mux_ia_src2 : multi_plexer2 port map (
+		sel		=> ia_src2,
+		mux_in0	=> pc_out,
+		mux_in1	=> selected_ia,
+		mux_out	=> instruction_address
 	);
 
-	pc_in <= next_instruction_address;
+	pc_inclementer : adder port map (
+		adder_a	=> selected_ia,
+		adder_b	=> "00000000000000000000000000000001",
+		adder_s	=> incremented_selected_ia
+	);
 
-	instruction_address <= pc_out(13 downto 0);
+	mux_pc_in : multi_plexer2 port map (
+		sel		=> ia_src2,
+		mux_in0	=> selected_ia,
+		mux_in1	=> incremented_selected_ia,
+		mux_out	=> pc_in
+	);
+
 	gpr_read_reg_num1 <= instruction(20 downto 16);
 	gpr_read_reg_num2 <= instruction(15 downto 11);
 	gpr_read_reg_num3 <= instruction(25 downto 21);
@@ -437,13 +446,6 @@ begin
 	ctr_in <= alu_out;
 	dmem_data_address <= alu_out(19 downto 0);
 	dmem_write_data <= gpr_read_data3;
-
-	process(simclk)
-	begin
-		if (rising_edge(simclk)) then
-			prev_instruction <= instruction;
-		end if;
-	end process;
 
 	-- generate clock for the simulation
 	clockgen : process

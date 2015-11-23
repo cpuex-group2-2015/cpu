@@ -13,7 +13,7 @@ end count_register;
 
 architecture struct of count_register is
 
-	signal ctr : std_logic_vector (31 downto 0);
+	signal ctr : std_logic_vector (31 downto 0) := "00000000000000000000000000000000";
 
 begin
 

@@ -13,7 +13,7 @@ end link_register;
 
 architecture struct of link_register is
 
-	signal lr : std_logic_vector (31 downto 0);
+	signal lr : std_logic_vector (31 downto 0) := "00000000000000000000000000000000";
 
 begin
 

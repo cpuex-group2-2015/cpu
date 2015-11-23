@@ -5,7 +5,7 @@ use ieee.std_logic_unsigned.all;
 entity instruction_memory is
 	port (
 		clk					: in  std_logic;
-		instruction_address	: in  std_logic_vector (13 downto 0);
+		instruction_address	: in  std_logic_vector (31 downto 0);
 		instruction			: out std_logic_vector (31 downto 0)
 	);
 end instruction_memory;
@@ -24,7 +24,7 @@ begin
 
 	bram : block_ram port map (
 		clka  => clk,
-		addra => instruction_address,
+		addra => instruction_address(13 downto 0),
 		douta => instruction
 	);
 

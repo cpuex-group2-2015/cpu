@@ -147,7 +147,7 @@ architecture testbench of testbench is
 			gpr_data_src      : out std_logic_vector (1 downto 0);
 			lr_src            : out std_logic;
 			ia_src            : out std_logic_vector (1 downto 0);
-			ia_src2           : out std_logic
+			stall_src           : out std_logic
 		);
 	end component;
 
@@ -187,9 +187,8 @@ architecture testbench of testbench is
 	signal instruction_address : std_logic_vector (31 downto 0) := (others => '0');
 	signal instruction         : std_logic_vector (31 downto 0) := (others => '0');
 	
-	signal incremented_ia : std_logic_vector (31 downto 0) := (others => '0');
-	signal selected_ia    : std_logic_vector (31 downto 0) := (others => '0');
-	signal incremented_selected_ia    : std_logic_vector (31 downto 0) := (others => '0');
+	signal selected_ia  : std_logic_vector (31 downto 0) := (others => '0');
+	signal ia_minus_one : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal gpr_write_enable  : std_logic                      := '0';
 	signal gpr_read_reg_num1 : std_logic_vector (4 downto 0)  := (others => '0');
@@ -249,7 +248,7 @@ architecture testbench of testbench is
 	signal gpr_data_src : std_logic_vector (1 downto 0) := (others => '0');
 	signal lr_src       : std_logic                     := '0';
 	signal ia_src       : std_logic_vector (1 downto 0) := (others => '0');
-	signal ia_src2      : std_logic                     := '0';
+	signal stall_src    : std_logic                     := '0';
 
 begin
 
@@ -373,16 +372,10 @@ begin
 		gpr_data_src      => gpr_data_src,
 		lr_src            => lr_src,
 		ia_src            => ia_src,
-		ia_src2           => ia_src2
+		stall_src         => stall_src
 	);
 
 	-- data path
-
-	ia_inclementer : adder port map (
-		adder_a	=> pc_out,
-		adder_b	=> "00000000000000000000000000000001",
-		adder_s	=> incremented_ia
-	);
 
 	mux_alu_src : multi_plexer2 port map (
 		sel		=> alu_src,
@@ -402,39 +395,34 @@ begin
 
 	mux_lr_src : multi_plexer2 port map (
 		sel		=> lr_src,
-		mux_in0	=> incremented_ia,
+		mux_in0	=> pc_out,
 		mux_in1	=> alu_out,
 		mux_out	=> lr_in
 	);
 
 	mux_ia_src : multi_plexer4 port map (
 		sel		=> ia_src,
-		mux_in0	=> incremented_ia,
+		mux_in0	=> pc_out,
 		mux_in1	=> lr_out,
 		mux_in2	=> ctr_out,
 		mux_in3	=> ext_out,
 		mux_out	=> selected_ia
 	);
 
-	mux_ia_src2 : multi_plexer2 port map (
-		sel		=> ia_src2,
-		mux_in0	=> pc_out,
-		mux_in1	=> selected_ia,
+	mux_stall : multi_plexer2 port map (
+		sel		=> stall_src,
+		mux_in0	=> selected_ia,
+		mux_in1	=> ia_minus_one,
 		mux_out	=> instruction_address
 	);
 
-	pc_inclementer : adder port map (
-		adder_a	=> selected_ia,
+	inclementer_for_pc : adder port map (
+		adder_a	=> instruction_address,
 		adder_b	=> "00000000000000000000000000000001",
-		adder_s	=> incremented_selected_ia
+		adder_s	=> pc_in
 	);
 
-	mux_pc_in : multi_plexer2 port map (
-		sel		=> ia_src2,
-		mux_in0	=> selected_ia,
-		mux_in1	=> incremented_selected_ia,
-		mux_out	=> pc_in
-	);
+	ia_minus_one <= selected_ia - 1;
 
 	gpr_read_reg_num1 <= instruction(20 downto 16);
 	gpr_read_reg_num2 <= instruction(15 downto 11);

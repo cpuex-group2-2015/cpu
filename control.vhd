@@ -9,18 +9,18 @@ entity control is
 		sub_opcode        : in  std_logic_vector (9 downto 0);
 		branch_op         : in  std_logic_vector (3 downto 0);
 		cr                : in  std_logic_vector (3 downto 0);
-		gpr_write_enable  : out std_logic;
-		dmem_write_enable : out std_logic;
-		cr_g_write_enable : out std_logic;
-		lr_write_enable   : out std_logic;
-		ctr_write_enable  : out std_logic;
-		ext_op            : out std_logic_vector (1 downto 0);
-		alu_op            : out std_logic_vector (2 downto 0);
-		alu_src           : out std_logic;
-		gpr_data_src      : out std_logic_vector (1 downto 0);
-		lr_src            : out std_logic;
-		ia_src            : out std_logic_vector (1 downto 0);
-		ia_src2           : out std_logic
+		gpr_write_enable  : out std_logic                     := '0';
+		dmem_write_enable : out std_logic                     := '0';
+		cr_g_write_enable : out std_logic                     := '0';
+		lr_write_enable   : out std_logic                     := '0';
+		ctr_write_enable  : out std_logic                     := '0';
+		ext_op            : out std_logic_vector (1 downto 0) := (others => '0');
+		alu_op            : out std_logic_vector (2 downto 0) := (others => '0');
+		alu_src           : out std_logic                     := '0';
+		gpr_data_src      : out std_logic_vector (1 downto 0) := (others => '0');
+		lr_src            : out std_logic                     := '0';
+		ia_src            : out std_logic_vector (1 downto 0) := (others => '0');
+		stall_src         : out std_logic                     := '0'
 	);
 end control;
 
@@ -52,7 +52,7 @@ begin
 			gpr_data_src      <= "--";
 			lr_src            <= '-';
 			ia_src            <= "00";
-			ia_src2           <= '0';
+			stall_src         <= '0';
 
 		when "001110" =>										-- 14 addi
 
@@ -69,7 +69,7 @@ begin
 			gpr_data_src      <= "00";
 			lr_src            <= '-';
 			ia_src            <= "00";
-			ia_src2           <= '0';
+			stall_src         <= '0';
 
 		when "001111" =>										-- 15 addis
 
@@ -86,7 +86,7 @@ begin
 			gpr_data_src      <= "00";
 			lr_src            <= '-';
 			ia_src            <= "00";
-			ia_src2           <= '0';
+			stall_src         <= '0';
 
 		when "010000" =>										-- 16 bc, bcl
 
@@ -101,7 +101,7 @@ begin
 			alu_op            <= "---";
 			alu_src           <= '-';
 			gpr_data_src      <= "--";
-			ia_src2           <= '1';
+			stall_src         <= '0';
 
 			if (cr(conv_integer(branch_op(1 downto 0))) = branch_op(2)) then
 				ia_src <= "11";
@@ -131,7 +131,7 @@ begin
 			alu_src           <= '-';
 			gpr_data_src      <= "--";
 			ia_src            <= "11";
-			ia_src2           <= '1';
+			stall_src         <= '0';
 
 			if (branch_op(3) = '0') then
 				lr_write_enable <= '0';
@@ -156,7 +156,7 @@ begin
 			gpr_data_src      <= "--";
 			lr_src            <= '-';
 			ia_src            <= "01";
-			ia_src2           <= '1';
+			stall_src         <= '0';
 
 		when "010100" =>										-- 20 bctr, bctrl
 
@@ -172,7 +172,7 @@ begin
 			alu_src           <= '-';
 			gpr_data_src      <= "--";
 			ia_src            <= "10";
-			ia_src2           <= '1';
+			stall_src         <= '0';
 
 			if (branch_op(3) = '0') then
 				lr_write_enable <= '0';
@@ -197,7 +197,7 @@ begin
 			gpr_data_src      <= "00";
 			lr_src            <= '-';
 			ia_src            <= "00";
-			ia_src2           <= '0';
+			stall_src         <= '0';
 
 		when "011100" =>										-- 28 andi
 
@@ -214,7 +214,7 @@ begin
 			gpr_data_src      <= "00";
 			lr_src            <= '-';
 			ia_src            <= "00";
-			ia_src2           <= '0';
+			stall_src         <= '0';
 
 		when "011110" =>										-- 30 cmp
 
@@ -236,7 +236,7 @@ begin
 			gpr_data_src      <= "--";
 			lr_src            <= '-';
 			ia_src            <= "00";
-			ia_src2           <= '0';
+			stall_src         <= '0';
 
 		when "100000" =>										-- 32 ld
 
@@ -256,11 +256,15 @@ begin
 			ia_src            <= "00";
 
 			if (wait_count = "10") then
-				wait_count <= "00";
-				ia_src2    <= '0';
+				if (rising_edge(clk)) then
+					wait_count <= "00";
+				end if;
+				stall_src    <= '0';
 			else
-				wait_count <= wait_count + 1;
-				ia_src2    <= '1';
+				if (rising_edge(clk)) then
+					wait_count <= wait_count + 1;
+				end if;
+				stall_src    <= '1';
 			end if;
 
 		when "100100" =>										-- 36 st
@@ -281,11 +285,15 @@ begin
 			ia_src            <= "00";
 
 			if (wait_count = "10") then
-				wait_count <= "00";
-				ia_src2    <= '0';
+				if (rising_edge(clk)) then
+					wait_count <= "00";
+				end if;
+				stall_src    <= '0';
 			else
-				wait_count <= wait_count + 1;
-				ia_src2    <= '1';
+				if (rising_edge(clk)) then
+					wait_count <= wait_count + 1;
+				end if;
+				stall_src    <= '1';
 			end if;
 
 		when "011111" =>
@@ -309,11 +317,15 @@ begin
 				ia_src            <= "00";
 
 				if (wait_count = "10") then
-					wait_count <= "00";
-					ia_src2    <= '0';
+					if (rising_edge(clk)) then
+						wait_count <= "00";
+					end if;
+					stall_src    <= '0';
 				else
-					wait_count <= wait_count + 1;
-					ia_src2    <= '1';
+					if (rising_edge(clk)) then
+						wait_count <= wait_count + 1;
+					end if;
+					stall_src    <= '1';
 				end if;
 
 			when "0010010111" =>								-- 31 - 151 stx
@@ -334,11 +346,15 @@ begin
 				ia_src            <= "00";
 
 				if (wait_count = "10") then
-					wait_count <= "00";
-					ia_src2    <= '0';
+					if (rising_edge(clk)) then
+						wait_count <= "00";
+					end if;
+					stall_src    <= '0';
 				else
-					wait_count <= wait_count + 1;
-					ia_src2    <= '1';
+					if (rising_edge(clk)) then
+						wait_count <= wait_count + 1;
+					end if;
+					stall_src    <= '1';
 				end if;
 
 			when "0100001010" =>								-- 31 - 266 add
@@ -356,7 +372,7 @@ begin
 				gpr_data_src      <= "00";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "0001101000" =>								-- 31 - 104 neg
 
@@ -373,7 +389,7 @@ begin
 				gpr_data_src      <= "00";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "0000011100" =>								-- 31 - 28 and
 
@@ -390,7 +406,7 @@ begin
 				gpr_data_src      <= "00";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "0110111100" =>								-- 31 - 444 or
 
@@ -407,7 +423,7 @@ begin
 				gpr_data_src      <= "00";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "0000011000" =>								-- 31 - 24 sl
 
@@ -424,7 +440,7 @@ begin
 				gpr_data_src      <= "00";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "1000011000" =>								-- 31 - 536 sr
 
@@ -441,7 +457,7 @@ begin
 				gpr_data_src      <= "00";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "0111010011" =>								-- 31 - 467 mtlr
 
@@ -458,7 +474,7 @@ begin
 				gpr_data_src      <= "--";
 				lr_src            <= '1';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "0101010011" =>								-- 31 - 339 mflr
 
@@ -475,7 +491,7 @@ begin
 				gpr_data_src      <= "10";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when "0111010100" =>								-- 31 - 468 mtctr
 
@@ -492,7 +508,7 @@ begin
 				gpr_data_src      <= "--";
 				lr_src            <= '-';
 				ia_src            <= "00";
-				ia_src2           <= '0';
+				stall_src         <= '0';
 
 			when others =>										-- NOP
 			end case;

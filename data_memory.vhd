@@ -4,7 +4,7 @@ use ieee.std_logic_unsigned.all;
 
 entity data_memory is
 	port (
-		clk          : in  std_logic;
+		clk               : in  std_logic;
 		dmem_write_enable : in  std_logic;
 		dmem_data_address : in  std_logic_vector (19 downto 0);
 		dmem_write_data   : in  std_logic_vector (31 downto 0);
@@ -29,14 +29,17 @@ end data_memory;
 
 architecture struct of data_memory is
 
+	signal ZDdebug : std_logic_vector (31 downto 0) := (others => 'Z');
+
 	signal state : std_logic_vector (1 downto 0) := (others => '0');
 
-	signal data_to_write1 : std_logic_vector (31 downto 0);
-	signal data_to_write0 : std_logic_vector (31 downto 0);
+	type data_mem is array(0 to 1) of std_logic_vector (31 downto 0);
+	signal data : data_mem := ("00000000000000000000000000000000", "00000000000000000000000000000000");
 
 begin
 
 	-- 固定
+	XWA <= not dmem_write_enable;
 	XE1 <= '0';
 	E2A <= '1';
 	XE3 <= '0';
@@ -51,20 +54,26 @@ begin
 	ZCLKMA(1) <= clk;
 	ZA <= dmem_data_address;
 
-	process (clk)
-	begin
-		if (state (1) = '0') then	-- 2clk 前は read だった
-			dmem_read_data <= ZD;
-		else						-- 2clk 前は write だった
-			dmem_read_data <= "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
-			ZD <= data_to_write1;	-- 2clk 前に write 用として受け取ったデータを与える
-		end if;
+	dmem_read_data <= ZD;
 
-		-- ステートの更新
-		state (1) <= state (0);
-		state (0) <= dmem_write_enable;
-		data_to_write1 <= data_to_write0;
-		data_to_write0 <= dmem_write_data;
+	process (clk, dmem_write_enable, dmem_data_address, dmem_write_data, ZD)
+	begin
+		if (rising_edge(clk)) then
+			if (state(1) = '0') then	-- 2clk 前は read だった
+				ZD <= (others => 'Z');
+				ZDdebug <= (others => 'Z');
+			else						-- 2clk 前は write だった
+				ZD <= data(1);
+				ZDdebug <= data(1);
+			end if;
+
+			-- 更新
+			state(0) <= state(1);			-- 1clk 後の state
+			state(1) <= dmem_write_enable;	-- 2clk 後の state
+
+			data(0) <= data(1);				-- 1clk 後に送る data
+			data(1) <= dmem_write_data;		-- 2clk 後に送る data
+		end if;
 	end process;
 
 end;

@@ -46,7 +46,8 @@ begin
 	--end process;
 
 	ext_out <= "0000000000000000" & ext_in                                when ext_op = "00"
-	else       ext_in(15) & "0000000000000000" & ext_in(14 downto 0)      when ext_op = "01"
+	else       "00000000000000000" & ext_in(14 downto 0)                  when ext_op = "01" and ext_in(15) = '0'
+	else       "11111111111111111" & ext_in(14 downto 0)                  when ext_op = "01" and ext_in(15) = '1'
 	else       ext_in(15) & "00000000000000" & ext_in(14 downto 0) & "00" when ext_op = "10"
 	else       ext_in(15) & "000000000000" & ext_in(14 downto 0) & "0000" when ext_op = "11"
 	else       "0000000000000000" & ext_in;

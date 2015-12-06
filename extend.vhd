@@ -19,37 +19,13 @@ end extend;
 architecture struct of extend is
 begin
 
-	--process(ext_op, ext_in)
-	--begin
-	--	case ext_op is
-	--	when "00" =>
-	--		ext_out(31 downto 16) <= "0000000000000000";
-	--		ext_out(15 downto 0)  <= ext_in;
-	--	when "01" =>
-	--		ext_out(31)           <= ext_in(15);
-	--		ext_out(30 downto 15) <= "0000000000000000";
-	--		ext_out(14 downto 0)  <= ext_in(14 downto 0);
-	--	when "10" =>
-	--		ext_out(31)           <= ext_in(15);
-	--		ext_out(30 downto 17) <= "00000000000000";
-	--		ext_out(16 downto 2)  <= ext_in(14 downto 0);
-	--		ext_out(1 downto 0)   <= "00";
-	--	when "11" =>
-	--		ext_out(31)           <= ext_in(15);
-	--		ext_out(30 downto 19) <= "000000000000";
-	--		ext_out(18 downto 4)  <= ext_in(14 downto 0);
-	--		ext_out(3 downto 0)   <= "0000";
-	--	when others =>
-	--		ext_out(31 downto 16) <= "0000000000000000";
-	--		ext_out(15 downto 0)  <= ext_in;
-	--	end case;
-	--end process;
-
-	ext_out <= "0000000000000000" & ext_in                                when ext_op = "00"
-	else       "00000000000000000" & ext_in(14 downto 0)                  when ext_op = "01" and ext_in(15) = '0'
-	else       "11111111111111111" & ext_in(14 downto 0)                  when ext_op = "01" and ext_in(15) = '1'
-	else       ext_in(15) & "00000000000000" & ext_in(14 downto 0) & "00" when ext_op = "10"
-	else       ext_in(15) & "000000000000" & ext_in(14 downto 0) & "0000" when ext_op = "11"
-	else       "0000000000000000" & ext_in;
+	ext_out <= "0000000000000000"  & ext_in                       when ext_op = "00"						-- EXT(D)
+	else       "00000000000000000" & ext_in(14 downto 0)          when ext_op = "01" and ext_in(15) = '0'	-- EXTS(D)
+	else       "11111111111111111" & ext_in(14 downto 0)          when ext_op = "01" and ext_in(15) = '1'	-- EXTS(D)
+	else       "000000000000000"   & ext_in(14 downto 0) & "00"   when ext_op = "10" and ext_in(15) = '0'	-- EXTS(D || 00)
+	else       "111111111111111"   & ext_in(14 downto 0) & "00"   when ext_op = "10" and ext_in(15) = '1'	-- EXTS(D || 00)
+	else       "0000000000000"     & ext_in(14 downto 0) & "0000" when ext_op = "11" and ext_in(15) = '0'	-- EXTS(D || 0000)
+	else       "1111111111111"     & ext_in(14 downto 0) & "0000" when ext_op = "11" and ext_in(15) = '1'	-- EXTS(D || 0000)
+	else       "0000000000000000"  & ext_in;
 
 end;

@@ -8,7 +8,7 @@ entity condition_register is
 		cr_g_write_enable : in  std_logic;
 		cr_f_write_enable : in  std_logic;
 		cr_in_g           : in  std_logic_vector (2 downto 0);
-		cr_in_f           : in  std_logic;
+		cr_in_f           : in  std_logic_vector (3 downto 0);
 		cr_out            : out std_logic_vector (3 downto 0)
 	);
 end condition_register;
@@ -28,7 +28,7 @@ begin
 				cr(3 downto 1) <= cr_in_g;
 			end if;
 			if (cr_f_write_enable = '1') then
-				cr(0) <= cr_in_f;
+				cr <= cr_in_f;
 			end if;
 		end if;
 	end process;

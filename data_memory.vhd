@@ -30,11 +30,8 @@ end data_memory;
 architecture struct of data_memory is
 
 	signal ZDdebug : std_logic_vector (31 downto 0) := (others => 'Z');
-
-	signal state : std_logic_vector (1 downto 0) := (others => '0');
-
-	type data_mem is array(0 to 1) of std_logic_vector (31 downto 0);
-	signal data : data_mem := ("00000000000000000000000000000000", "00000000000000000000000000000000");
+	signal state   : std_logic                      := '0';
+	signal data    : std_logic_vector (31 downto 0) := (others => '0');
 
 begin
 
@@ -54,26 +51,25 @@ begin
 	ZCLKMA(1) <= clk;
 	ZA <= dmem_data_address;
 
-	dmem_read_data <= ZD;
+	dmem_read_data <= ZD;	-- とりあえず常に出しておく
 
 	process (clk, dmem_write_enable, dmem_data_address, dmem_write_data, ZD)
 	begin
 		if (rising_edge(clk)) then
-			if (state(1) = '0') then	-- 2clk 前は read だった
-				ZD <= (others => 'Z');
+			if (state = '0') then
+				ZD      <= (others => 'Z');
 				ZDdebug <= (others => 'Z');
-			else						-- 2clk 前は write だった
-				ZD <= data(1);
-				ZDdebug <= data(1);
+			else
+				ZD <= data;
+				ZDdebug <= data;
 			end if;
 
 			-- 更新
-			state(0) <= state(1);			-- 1clk 後の state
-			state(1) <= dmem_write_enable;	-- 2clk 後の state
-
-			data(0) <= data(1);				-- 1clk 後に送る data
-			data(1) <= dmem_write_data;		-- 2clk 後に送る data
+			state <= dmem_write_enable;
+			data  <= dmem_write_data;
 		end if;
 	end process;
 
 end;
+
+-- 

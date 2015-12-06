@@ -10,14 +10,20 @@ entity control is
 		branch_op         : in  std_logic_vector (3 downto 0);
 		cr                : in  std_logic_vector (3 downto 0);
 		gpr_write_enable  : out std_logic                     := '0';
+		fpr_write_enable  : out std_logic                     := '0';
 		dmem_write_enable : out std_logic                     := '0';
 		cr_g_write_enable : out std_logic                     := '0';
+		cr_f_write_enable : out std_logic                     := '0';
 		lr_write_enable   : out std_logic                     := '0';
 		ctr_write_enable  : out std_logic                     := '0';
 		ext_op            : out std_logic_vector (1 downto 0) := (others => '0');
 		alu_op            : out std_logic_vector (2 downto 0) := (others => '0');
 		alu_src           : out std_logic                     := '0';
-		gpr_data_src      : out std_logic_vector (1 downto 0) := (others => '0');
+		dmem_src          : out std_logic                     := '0';
+		fpu_op            : out std_logic_vector (1 downto 0) := (others => '0');
+		fadd_op           : out std_logic                     := '0';
+		data_src          : out std_logic_vector (1 downto 0) := (others => '0');
+		f_data_src        : out std_logic_vector (1 downto 0) := (others => '0');
 		lr_src            : out std_logic                     := '0';
 		ia_src            : out std_logic_vector (1 downto 0) := (others => '0');
 		stall_src         : out std_logic                     := '0'
@@ -30,492 +36,277 @@ architecture struct of control is
 
 begin
 
+	gpr_write_enable <= '1'
+		when   (opcode = "100000"					-- ld
+			or  opcode = "001110"					-- addi
+			or  opcode = "001111"					-- addis
+			or  opcode = "011100"					-- andi
+			or  opcode = "011001"					-- ori
+			or  opcode = "010110"					-- mfftg
+			or (opcode = "011111"
+				and (sub_opcode = "0000010111"		-- ldx
+				or   sub_opcode = "0100001010"		-- add
+				or   sub_opcode = "0001101000"		-- neg
+				or   sub_opcode = "0000011100"		-- and
+				or   sub_opcode = "0110111100"		-- or
+				or   sub_opcode = "0101010011"		-- mflr
+				or   sub_opcode = "0000011000"		-- sl
+				or   sub_opcode = "1000011000")))	-- sr
+		else '0';
+
+	fpr_write_enable <= '1'
+		when   (opcode = "110010"					-- lf
+			or  opcode = "010101"					-- mfgtf
+			or (opcode = "011111"
+				and  sub_opcode = "1001010111")		-- lfx
+			or (opcode = "111111"
+				and (sub_opcode = "0001001000"		-- fmr
+				or   sub_opcode = "0000010101"		-- fadd
+				or   sub_opcode = "0000010100"		-- fsub
+				or   sub_opcode = "0000011001"		-- fmul
+				or   sub_opcode = "0000010010"		-- fdiv
+				or   sub_opcode = "0000101000"		-- fneg
+				or   sub_opcode = "0100001000")))	-- fabs
+		else '0';
+
+	dmem_write_enable <= '1'
+		when   (opcode = "100100"					-- st
+			or (opcode = "011111"
+				and sub_opcode = "0010010111"))		-- stx
+		else '0';
+
+	cr_g_write_enable <= '1'
+		when   (opcode = "001011"	-- cmpi
+			or  opcode = "011110")	-- cmp
+		else '0';
+
+	cr_f_write_enable <= '1'
+		when (opcode = "111111" and sub_opcode = "0000000000")	-- fcmp
+		else '0';
+
+	lr_write_enable <= '1'
+		when  ((opcode = "010010" and branch_op(3) = '1')																-- bl
+			or (opcode = "010000" and cr(conv_integer(branch_op(1 downto 0))) = branch_op(2) and branch_op(3) = '1')	-- bcl
+			or (opcode = "010100" and branch_op(3) = '1')																-- bctrl
+			or (opcode = "011111" and sub_opcode = "0111010011"))														-- mtlr
+		else '0';
+
+	ctr_write_enable <= '1'
+		when   (opcode = "011111" and sub_opcode = "0111010100")	-- mtctr
+		else '0';
+
+	ext_op <= "00"
+			when   (opcode = "011100"	-- andi
+				or  opcode = "011001"	-- ori
+				or  opcode = "010010"	-- b, bl
+				or  opcode = "010000")	-- bc, bcl
+		else "01"
+			when   (opcode = "100000"	-- ld
+				or  opcode = "100100"	-- st
+				or  opcode = "001110"	-- addi
+				or  opcode = "001011"	-- cmpi
+				or  opcode = "011110")	-- cmp
+		else "11"
+			when   (opcode = "001111")	-- addis
+		else "--";
+
+	alu_op <= "000"
+			when   (opcode = "100000"					-- ld
+				or  opcode = "100100"					-- st
+				or  opcode = "001110"					-- addi
+				or  opcode = "001111"					-- addis
+				or (opcode = "011111"
+					and (sub_opcode = "0000010111"		-- ldx
+					or   sub_opcode = "0010010111"		-- stx
+					or   sub_opcode = "0100001010")))	-- add
+		else "001"
+			when   (opcode = "011111"
+					and  sub_opcode = "0001101000")		-- neg
+
+		else "010"
+			when   (opcode = "011100"					-- andi
+				or (opcode = "011111"
+					and sub_opcode = "0000011100"))		-- and
+		else "011"
+			when   (opcode = "011001"					-- ori
+				or  opcode = "010101"					-- mfgtf
+				or (opcode = "011111"
+					and (sub_opcode = "0110111100"		-- or
+					or   sub_opcode = "0111010011"		-- mtlr
+					or   sub_opcode = "0111010100")))	-- mtctr
+		else "100"
+			when   (opcode = "0000011000")				-- sl
+		else "101"
+			when   (opcode = "1000011000")				-- sr
+		else "110"
+			when   (opcode = "001011"					-- cmpi
+				or  opcode = "011110")					-- cmp
+		else "---";
+
+	alu_src <= '1'
+			when   (opcode = "100000"					-- ld
+				or  opcode = "100100"					-- st
+				or  opcode = "001110"					-- addi
+				or  opcode = "001111"					-- addis
+				or  opcode = "011100"					-- andi
+				or  opcode = "011001"					-- ori
+				or  opcode = "001011")					-- cmpi
+		else '0'
+			when   (opcode = "011110"					-- cmp
+				or  opcode = "010101"					-- mfgtf
+				or (opcode = "011111"
+					and (sub_opcode = "0000010111"		-- ldx
+					or   sub_opcode = "0010010111"		-- stx
+					or   sub_opcode = "0100001010"		-- add
+					or   sub_opcode = "0000011100"		-- and
+					or   sub_opcode = "0110111100"		-- or
+					or   sub_opcode = "0111010011"		-- mtlr
+					or   sub_opcode = "0111010100"		-- mtctr
+					or   sub_opcode = "0000011000"		-- sl
+					or   sub_opcode = "1000011000")))	-- sr
+		else '-';
+
+	dmem_src <= '0'
+			when   (opcode = "100100"					-- st
+				or (opcode = "011111"
+					and sub_opcode = "0010010111"))		-- stx
+		else '1'
+			when   (opcode = "110100"					-- stf
+				or (opcode = "011111"
+					and sub_opcode = "1010010111"))		-- stfx
+		else '-';
+
+	fpu_op <= "00"
+			when   (opcode = "010110"					-- mfftg
+				or (opcode = "111111"
+					and  sub_opcode = "0001001000"))	-- fmr
+		else "01"
+			when   (opcode = "111111"
+					and  sub_opcode = "0000101000")		-- fneg
+		else "10"
+			when   (opcode = "111111"
+					and  sub_opcode = "0100001000")		-- fabs
+		else "11"
+			when   (opcode = "111111"
+					and  sub_opcode = "0000000000")		-- fcmp
+		else "--";
+
+	fadd_op <= '0'
+			when (opcode = "011111" and sub_opcode = "0000010101")	-- fadd
+		else '1'
+			when (opcode = "011111" and sub_opcode = "0000010100")	-- fsub
+		else '-';
+
+	data_src <= "00"
+			when   (opcode = "001110"					-- addi
+				or  opcode = "001111"					-- addis
+				or  opcode = "011100"					-- andi
+				or  opcode = "011001"					-- ori
+				or  opcode = "010101"					-- mfgtf
+				or (opcode = "011111"
+					and (sub_opcode = "0100001010"		-- add
+					or   sub_opcode = "0001101000"		-- neg
+					or   sub_opcode = "0000011100"		-- and
+					or   sub_opcode = "0110111100"		-- or
+					or   sub_opcode = "0000011000"		-- sl
+					or   sub_opcode = "1000011000")))	-- sr
+		else "01"
+			when   (opcode = "100000"					-- ld
+				or  opcode = "110010"					-- lf
+				or (opcode = "011111"
+					and (sub_opcode = "0000010111"		-- ldx
+					or   sub_opcode = "1001010111")))	-- lfx
+		else "10"
+			when   (opcode = "011111"
+					and  sub_opcode = "0101010011")		-- mflr
+		else "11"
+			when   (opcode = "010110"					-- mfftg
+				or (opcode = "111111"
+					and (sub_opcode = "0001001000"		-- fmr
+					or   sub_opcode = "0000010101"		-- fadd
+					or   sub_opcode = "0000010100"		-- fsub
+					or   sub_opcode = "0000011001"		-- fmul
+					or   sub_opcode = "0000010010"		-- fdiv
+					or   sub_opcode = "0000101000"		-- fneg
+					or   sub_opcode = "0100001000")))	-- fabs
+		else "--";
+
+	f_data_src <= "00"
+			when   (opcode = "010110"					-- mfftg
+				or (opcode = "111111"
+					and (sub_opcode = "0001001000"		-- fmr
+					or   sub_opcode = "0000101000"		-- fneg
+					or   sub_opcode = "0100001000")))	-- fabs
+		else "01"
+			when   (opcode = "111111"
+					and (sub_opcode = "0000010101"		-- fadd
+					or   sub_opcode = "0000010100"))	-- fsub
+		else "10"
+			when   (opcode = "111111"
+					and  sub_opcode = "0000011001")		-- fmul
+		else "11"
+			when   (opcode = "111111"
+					and  sub_opcode = "0000010010")		-- fdiv
+		else "--";
+
+	lr_src <= '1'
+			when   (opcode = "011111" and sub_opcode = "0111010011")	-- mtlr
+		else '0'
+			when  ((opcode = "010010" and branch_op(3) = '1')			-- bl
+				or (opcode = "010000" and branch_op(3) = '1')			-- bcl
+				or (opcode = "010100" and branch_op(3) = '1'))			-- bctrl
+		else '-';
+
+	ia_src <= "01"
+			when   (opcode = "010011")																-- blr
+		else "10"
+			when   (opcode = "010100")																-- bctr, bctrl
+		else "11"
+			when   (opcode = "010010"																-- b, bl
+				or (opcode = "010000" and cr(conv_integer(branch_op(1 downto 0))) = branch_op(2)))	-- bc, bcl
+		else "00";
+
+	stall_src <= '1'
+		when (wait_count /= "10"	-- 3clk instructions
+			and (opcode = "100000"					-- ld
+			or   opcode = "100100"					-- st
+			or   opcode = "110010"					-- lf
+			or   opcode = "110100"					-- stf
+			or  (opcode = "011111"
+				and (sub_opcode = "0000010111"		-- ldx
+				or   sub_opcode = "1001010111"		-- lfx
+				or   sub_opcode = "0010010111"		-- stx
+				or   sub_opcode = "1010010111"))	-- stfx
+			or  (opcode = "111111"
+				and (sub_opcode = "0000010101"		-- fadd
+				or   sub_opcode = "0000010100"		-- fsub
+				or   sub_opcode = "0000011001"))))	-- fmul
+		else '0';
+
 	process (clk, opcode, sub_opcode, branch_op, cr)
 	begin
-		case opcode is
-		when "001011" =>										-- 11 cmpi
-
-			-- a <- (RA)
-			-- if a < EXTS(SI) then c <- 0b100
-			-- else if a > EXTS(SI) then c <- 0b010
-			-- else c <- 0b001
-			-- CR <- c || XER_SO
-
-			gpr_write_enable  <= '0';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '1';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "01";
-			alu_op            <= "110";	-- cmp
-			alu_src           <= '1';
-			gpr_data_src      <= "--";
-			lr_src            <= '-';
-			ia_src            <= "00";
-			stall_src         <= '0';
-
-		when "001110" =>										-- 14 addi
-
-			-- RT <- (RA) + EXTS(SI)
-
-			gpr_write_enable  <= '1';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "01";
-			alu_op            <= "000";	-- add
-			alu_src           <= '1';
-			gpr_data_src      <= "00";
-			lr_src            <= '-';
-			ia_src            <= "00";
-			stall_src         <= '0';
-
-		when "001111" =>										-- 15 addis
-
-			-- RT <- (RA) + EXTS(SI || 0000)
-
-			gpr_write_enable  <= '1';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "11";
-			alu_op            <= "000";	-- add
-			alu_src           <= '1';
-			gpr_data_src      <= "00";
-			lr_src            <= '-';
-			ia_src            <= "00";
-			stall_src         <= '0';
-
-		when "010000" =>										-- 16 bc, bcl
-
-			-- if CR_BI = BO then NIA <-_iea EXTS(BD || 0b00)
-			-- LR <-_iea CIA + 4
-
-			gpr_write_enable  <= '0';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "00";
-			alu_op            <= "---";
-			alu_src           <= '-';
-			gpr_data_src      <= "--";
-			stall_src         <= '0';
-
-			if (cr(conv_integer(branch_op(1 downto 0))) = branch_op(2)) then
-				ia_src <= "11";
-			else
-				ia_src <= "00";
-			end if;
-
-			if (branch_op(3) = '0') then
-				lr_write_enable <= '0';
-				lr_src          <= '-';				
-			else
-				lr_write_enable <= '1';
-				lr_src          <= '0';
-			end if;
-
-		when "010010" =>										-- 18 b, bl
-
-			-- NIA <-_iea EXTS(LI || 0b00)
-			-- LR <-_iea CIA + 4
-
-			gpr_write_enable  <= '0';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "00";
-			alu_op            <= "---";
-			alu_src           <= '-';
-			gpr_data_src      <= "--";
-			ia_src            <= "11";
-			stall_src         <= '0';
-
-			if (branch_op(3) = '0') then
-				lr_write_enable <= '0';
-				lr_src          <= '-';				
-			else
-				lr_write_enable <= '1';
-				lr_src          <= '0';
-			end if;
-
-		when "010011" =>										-- 19 blr
-
-			-- NIA <- (LR)
-
-			gpr_write_enable  <= '0';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "--";
-			alu_op            <= "---";
-			alu_src           <= '-';
-			gpr_data_src      <= "--";
-			lr_src            <= '-';
-			ia_src            <= "01";
-			stall_src         <= '0';
-
-		when "010100" =>										-- 20 bctr, bctrl
-
-			-- NIA <-_(CTR)
-			-- LR <-_iea CIA + 4
-
-			gpr_write_enable  <= '0';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "00";
-			alu_op            <= "---";
-			alu_src           <= '-';
-			gpr_data_src      <= "--";
-			ia_src            <= "10";
-			stall_src         <= '0';
-
-			if (branch_op(3) = '0') then
-				lr_write_enable <= '0';
-				lr_src          <= '-';				
-			else
-				lr_write_enable <= '1';
-				lr_src          <= '0';
-			end if;
-
-		when "011001" =>										-- 25 ori
-
-			-- RS <- (RA) | (0 || UI)
-
-			gpr_write_enable  <= '1';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "00";
-			alu_op            <= "011";	-- or
-			alu_src           <= '1';
-			gpr_data_src      <= "00";
-			lr_src            <= '-';
-			ia_src            <= "00";
-			stall_src         <= '0';
-
-		when "011100" =>										-- 28 andi
-
-			-- RS <- (RA) & (0 || UI)
-
-			gpr_write_enable  <= '1';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "00";
-			alu_op            <= "010";	-- and
-			alu_src           <= '1';
-			gpr_data_src      <= "00";
-			lr_src            <= '-';
-			ia_src            <= "00";
-			stall_src         <= '0';
-
-		when "011110" =>										-- 30 cmp
-
-			-- a <- (RA)
-			-- b <- (RB)
-			-- if a < b then c <- 0b100
-			-- else if a > b then c <- 0b010
-			-- else c <- 0b001
-			-- CR <- c || XER_SO
-
-			gpr_write_enable  <= '0';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '1';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "01";
-			alu_op            <= "110";	-- cmp
-			alu_src           <= '0';
-			gpr_data_src      <= "--";
-			lr_src            <= '-';
-			ia_src            <= "00";
-			stall_src         <= '0';
-
-		when "100000" =>										-- 32 ld
-
-			-- ea <- (RA) + EXTS(D)
-			-- RT <- MEM(ea, 4)
-
-			gpr_write_enable  <= '1';
-			dmem_write_enable <= '0';
-			cr_g_write_enable <= '0';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "01";
-			alu_op            <= "000";	-- add
-			alu_src           <= '1';
-			gpr_data_src      <= "01";
-			lr_src            <= '-';
-			ia_src            <= "00";
-
-			if (wait_count = "10") then
-				if (rising_edge(clk)) then
-					wait_count <= "00";
-				end if;
-				stall_src    <= '0';
-			else
-				if (rising_edge(clk)) then
-					wait_count <= wait_count + 1;
-				end if;
-				stall_src    <= '1';
-			end if;
-
-		when "100100" =>										-- 36 st
-
-			-- ea <- (RA) + EXTS(D)
-			-- MEM(ea, 4) <- (RS)
-
-			gpr_write_enable  <= '0';
-			dmem_write_enable <= '1';
-			cr_g_write_enable <= '0';
-			lr_write_enable   <= '0';
-			ctr_write_enable  <= '0';
-			ext_op            <= "01";
-			alu_op            <= "000";	-- add
-			alu_src           <= '1';
-			gpr_data_src      <= "--";
-			lr_src            <= '-';
-			ia_src            <= "00";
-
-			if (wait_count = "10") then
-				if (rising_edge(clk)) then
-					wait_count <= "00";
-				end if;
-				stall_src    <= '0';
-			else
-				if (rising_edge(clk)) then
-					wait_count <= wait_count + 1;
-				end if;
-				stall_src    <= '1';
-			end if;
-
-		when "011111" =>
-
-			case sub_opcode is
-			when "0000010111" =>								-- 31 - 23 ldx
-
-				-- ea <- (RA) + (RB)
-				-- RT <- MEM(ea, 4)
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "000";	-- add
-				alu_src           <= '0';
-				gpr_data_src      <= "01";
-				lr_src            <= '-';
-				ia_src            <= "00";
+		if (rising_edge(clk)) then
+			if      (opcode = "100000"						-- ld
+				or   opcode = "100100"						-- st
+				or   opcode = "110010"						-- lf
+				or   opcode = "110100"						-- stf
+				or  (opcode = "011111"
+					and (sub_opcode = "0000010111"			-- ldx
+					or   sub_opcode = "1001010111"			-- lfx
+					or   sub_opcode = "0010010111"			-- stx
+					or   sub_opcode = "1010010111"))		-- stfx
+				or  (opcode = "111111"
+					and (sub_opcode = "0000010101"			-- fadd
+					or   sub_opcode = "0000010100"			-- fsub
+					or   sub_opcode = "0000011001"))) then	-- fmul
 
 				if (wait_count = "10") then
-					if (rising_edge(clk)) then
 						wait_count <= "00";
-					end if;
-					stall_src    <= '0';
 				else
-					if (rising_edge(clk)) then
 						wait_count <= wait_count + 1;
-					end if;
-					stall_src    <= '1';
 				end if;
-
-			when "0010010111" =>								-- 31 - 151 stx
-
-				-- ea <- (RA) + (RB)
-				-- MEM(ea, 4) <- (RS)
-
-				gpr_write_enable  <= '0';
-				dmem_write_enable <= '1';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "000";	-- add
-				alu_src           <= '0';
-				gpr_data_src      <= "--";
-				lr_src            <= '-';
-				ia_src            <= "00";
-
-				if (wait_count = "10") then
-					if (rising_edge(clk)) then
-						wait_count <= "00";
-					end if;
-					stall_src    <= '0';
-				else
-					if (rising_edge(clk)) then
-						wait_count <= wait_count + 1;
-					end if;
-					stall_src    <= '1';
-				end if;
-
-			when "0100001010" =>								-- 31 - 266 add
-
-				-- RT <- (RA) + (RB)
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "000";	-- add
-				alu_src           <= '0';
-				gpr_data_src      <= "00";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "0001101000" =>								-- 31 - 104 neg
-
-				-- RT <- ¬(RA) + 1
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "001";	-- neg
-				alu_src           <= '-';
-				gpr_data_src      <= "00";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "0000011100" =>								-- 31 - 28 and
-
-				-- RT <- (RA) & (RB)
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "010";	-- and
-				alu_src           <= '0';
-				gpr_data_src      <= "00";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "0110111100" =>								-- 31 - 444 or
-
-				-- RT <- (RA) | (RB)
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "011";	-- or
-				alu_src           <= '0';
-				gpr_data_src      <= "00";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "0000011000" =>								-- 31 - 24 sl
-
-				-- RT <- sl((RA), (RB)[4 - 0])
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "100";	-- sl
-				alu_src           <= '0';
-				gpr_data_src      <= "00";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "1000011000" =>								-- 31 - 536 sr
-
-				-- RT <- sr((RA), (RB)[4 - 0])
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "101";	-- sr
-				alu_src           <= '0';
-				gpr_data_src      <= "00";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "0111010011" =>								-- 31 - 467 mtlr
-
-				-- LR <- (RS) | (R0)
-
-				gpr_write_enable  <= '0';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '1';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "011";	-- or
-				alu_src           <= '0';
-				gpr_data_src      <= "--";
-				lr_src            <= '1';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "0101010011" =>								-- 31 - 339 mflr
-
-				-- RT <- (LR)
-
-				gpr_write_enable  <= '1';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '0';
-				ext_op            <= "--";
-				alu_op            <= "---";
-				alu_src           <= '-';
-				gpr_data_src      <= "10";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when "0111010100" =>								-- 31 - 468 mtctr
-
-				-- CTR <- (RS) | (R0)
-
-				gpr_write_enable  <= '0';
-				dmem_write_enable <= '0';
-				cr_g_write_enable <= '0';
-				lr_write_enable   <= '0';
-				ctr_write_enable  <= '1';
-				ext_op            <= "--";
-				alu_op            <= "011";	-- or
-				alu_src           <= '0';
-				gpr_data_src      <= "--";
-				lr_src            <= '-';
-				ia_src            <= "00";
-				stall_src         <= '0';
-
-			when others =>										-- NOP
-			end case;
-
-		when others =>											-- NOP
-		end case;
-
+			end if;
+		end if;
 	end process;
 
 end;

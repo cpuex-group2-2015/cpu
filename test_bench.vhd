@@ -38,6 +38,21 @@ architecture testbench of testbench is
 		);
 	end component;
 
+	component floating_point_registers is
+		port (
+			clk               : in  std_logic;
+			fpr_write_enable  : in  std_logic;
+			fpr_read_reg_num1 : in  std_logic_vector (4 downto 0);
+			fpr_read_reg_num2 : in  std_logic_vector (4 downto 0);
+			fpr_read_reg_num3 : in  std_logic_vector (4 downto 0);
+			fpr_write_reg_num : in  std_logic_vector (4 downto 0);
+			fpr_write_data    : in  std_logic_vector (31 downto 0);
+			fpr_read_data1    : out std_logic_vector (31 downto 0);
+			fpr_read_data2    : out std_logic_vector (31 downto 0);
+			fpr_read_data3    : out std_logic_vector (31 downto 0)
+		);
+	end component;
+
 	component data_memory is
 		port (
 			clk               : in  std_logic;
@@ -92,6 +107,35 @@ architecture testbench of testbench is
 		);
 	end component;
 
+	component floating_point_unit is
+		port (
+			fpu_op   : in  std_logic_vector (1 downto 0);
+			fpu_in1  : in  std_logic_vector (31 downto 0);
+			fpu_in2  : in  std_logic_vector (31 downto 0);
+			fpu_cond : out std_logic_vector (3 downto 0);
+			fpu_out  : out std_logic_vector (31 downto 0)
+		);
+	end component;
+
+	component fadd_fsub is
+		port (
+			clk       : in  std_logic;
+			fadd_op   : in  std_logic;
+			fadd_in1  : in  std_logic_vector (31 downto 0);
+			fadd_in2  : in  std_logic_vector (31 downto 0);
+			fadd_out  : out std_logic_vector (31 downto 0)
+		);
+	end component;
+
+	component fmul is
+		port (
+			clk     : in  std_logic;
+			input_a : in  std_logic_vector (31 downto 0);
+			input_b : in  std_logic_vector (31 downto 0);
+			output  : out std_logic_vector (31 downto 0)
+		);
+	end component;
+
 	component extend is
 		port (
 			ext_op  : in  std_logic_vector (1 downto 0);
@@ -106,7 +150,7 @@ architecture testbench of testbench is
 			cr_g_write_enable : in  std_logic;
 			cr_f_write_enable : in  std_logic;
 			cr_in_g           : in  std_logic_vector (2 downto 0);
-			cr_in_f           : in  std_logic;
+			cr_in_f           : in  std_logic_vector (3 downto 0);
 			cr_out            : out std_logic_vector (3 downto 0)
 		);
 	end component;
@@ -139,15 +183,20 @@ architecture testbench of testbench is
 			gpr_write_enable  : out std_logic;
 			dmem_write_enable : out std_logic;
 			cr_g_write_enable : out std_logic;
+			cr_f_write_enable : out std_logic;
 			lr_write_enable   : out std_logic;
 			ctr_write_enable  : out std_logic;
 			ext_op            : out std_logic_vector (1 downto 0);
 			alu_op            : out std_logic_vector (2 downto 0);
 			alu_src           : out std_logic;
-			gpr_data_src      : out std_logic_vector (1 downto 0);
+			dmem_src          : out std_logic;
+			fpu_op            : out std_logic_vector (1 downto 0);
+			fadd_op           : out std_logic;
+			data_src          : out std_logic_vector (1 downto 0);
+			f_data_src        : out std_logic_vector (1 downto 0);
 			lr_src            : out std_logic;
 			ia_src            : out std_logic_vector (1 downto 0);
-			stall_src           : out std_logic
+			stall_src         : out std_logic
 		);
 	end component;
 
@@ -200,6 +249,16 @@ architecture testbench of testbench is
 	signal gpr_read_data2    : std_logic_vector (31 downto 0) := (others => '0');
 	signal gpr_read_data3    : std_logic_vector (31 downto 0) := (others => '0');
 
+	signal fpr_write_enable  : std_logic                      := '0';
+	signal fpr_read_reg_num1 : std_logic_vector (4 downto 0)  := (others => '0');
+	signal fpr_read_reg_num2 : std_logic_vector (4 downto 0)  := (others => '0');
+	signal fpr_read_reg_num3 : std_logic_vector (4 downto 0)  := (others => '0');
+	signal fpr_write_reg_num : std_logic_vector (4 downto 0)  := (others => '0');
+	signal fpr_write_data    : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpr_read_data1    : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpr_read_data2    : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpr_read_data3    : std_logic_vector (31 downto 0) := (others => '0');
+
 	signal dmem_write_enable : std_logic                      := '0';
 	signal dmem_data_address : std_logic_vector (19 downto 0) := (others => '0');
 	signal dmem_write_data   : std_logic_vector (31 downto 0) := (others => '0');
@@ -226,6 +285,21 @@ architecture testbench of testbench is
 	signal alu_cond : std_logic_vector (2 downto 0)  := (others => '0');
 	signal alu_out  : std_logic_vector (31 downto 0) := (others => '0');
 
+	signal fpu_op   : std_logic_vector (1 downto 0)  := (others => '0');
+	signal fpu_in1  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpu_in2  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpu_cond : std_logic_vector (3 downto 0)  := (others => '0');
+	signal fpu_out  : std_logic_vector (31 downto 0) := (others => '0');
+
+	signal fadd_op   : std_logic                      := '0';
+	signal fadd_in1  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fadd_in2  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fadd_out  : std_logic_vector (31 downto 0) := (others => '0');
+
+	signal fmul_in1  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fmul_in2  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fmul_out  : std_logic_vector (31 downto 0) := (others => '0');
+
 	signal ext_op  : std_logic_vector (1 downto 0)  := (others => '0');
 	signal ext_in  : std_logic_vector (15 downto 0) := (others => '0');
 	signal ext_out : std_logic_vector (31 downto 0) := (others => '0');
@@ -233,7 +307,7 @@ architecture testbench of testbench is
 	signal cr_g_write_enable : std_logic                     := '0';
 	signal cr_f_write_enable : std_logic                     := '0';
 	signal cr_in_g           : std_logic_vector (2 downto 0) := (others => '0');
-	signal cr_in_f           : std_logic                     := '0';
+	signal cr_in_f           : std_logic_vector (3 downto 0) := (others => '0');
 	signal cr_out            : std_logic_vector (3 downto 0) := (others => '0');
 
 	signal lr_write_enable : std_logic                      := '0';
@@ -245,10 +319,15 @@ architecture testbench of testbench is
 	signal ctr_out          : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal alu_src      : std_logic                     := '0';
-	signal gpr_data_src : std_logic_vector (1 downto 0) := (others => '0');
+	signal dmem_src     : std_logic                     := '0';
+	signal data_src     : std_logic_vector (1 downto 0) := (others => '0');
+	signal f_data_src   : std_logic_vector (1 downto 0) := (others => '0');
 	signal lr_src       : std_logic                     := '0';
 	signal ia_src       : std_logic_vector (1 downto 0) := (others => '0');
 	signal stall_src    : std_logic                     := '0';
+
+	signal selected_data   : std_logic_vector (31 downto 0) := (others => '0');
+	signal selected_data_f : std_logic_vector (31 downto 0) := (others => '0');
 
 begin
 
@@ -276,6 +355,19 @@ begin
 		gpr_read_data1    => gpr_read_data1,
 		gpr_read_data2    => gpr_read_data2,
 		gpr_read_data3    => gpr_read_data3
+	);
+
+	fpr : floating_point_registers port map (
+		clk               => simclk,
+		fpr_write_enable  => fpr_write_enable,
+		fpr_read_reg_num1 => fpr_read_reg_num1,
+		fpr_read_reg_num2 => fpr_read_reg_num2,
+		fpr_read_reg_num3 => fpr_read_reg_num3,
+		fpr_write_reg_num => fpr_write_reg_num,
+		fpr_write_data	  => fpr_write_data,
+		fpr_read_data1    => fpr_read_data1,
+		fpr_read_data2    => fpr_read_data2,
+		fpr_read_data3    => fpr_read_data3
 	);
 
 	dmem : data_memory port map (
@@ -326,6 +418,29 @@ begin
 		alu_out  => alu_out
 	);
 
+	fpu : floating_point_unit port map (
+		fpu_op   => fpu_op,
+		fpu_in1  => fpu_in1,
+		fpu_in2  => fpu_in2,
+		fpu_cond => fpu_cond,
+		fpu_out  => fpu_out
+	);
+
+	fa : fadd_fsub port map (
+		clk       => simclk,
+		fadd_op   => fadd_op,
+		fadd_in1  => fadd_in1,
+		fadd_in2  => fadd_in2,
+		fadd_out  => fadd_out
+	);
+
+	fm : fmul port map (
+		clk     => simclk,
+		input_a => fmul_in1,
+		input_b => fmul_in2,
+		output  => fmul_out
+	);
+
 	ext : extend port map (
 		ext_op  => ext_op,
 		ext_in  => ext_in,
@@ -369,7 +484,11 @@ begin
 		ext_op            => ext_op,
 		alu_op            => alu_op,
 		alu_src           => alu_src,
-		gpr_data_src      => gpr_data_src,
+		dmem_src          => dmem_src,
+		fpu_op            => fpu_op,
+		fadd_op           => fadd_op,
+		data_src          => data_src,
+		f_data_src        => f_data_src,
 		lr_src            => lr_src,
 		ia_src            => ia_src,
 		stall_src         => stall_src
@@ -384,13 +503,29 @@ begin
 		mux_out	=> alu_in2
 	);
 
-	mux_gpr_data_src : multi_plexer4 port map (
-		sel		=> gpr_data_src,
+	mux_dmem_src : multi_plexer2 port map (
+		sel		=> dmem_src,
+		mux_in0	=> gpr_read_data3,
+		mux_in1	=> fpr_read_data3,
+		mux_out	=> dmem_write_data
+	);
+
+	mux_data_src : multi_plexer4 port map (
+		sel		=> data_src,
 		mux_in0	=> alu_out,
 		mux_in1	=> dmem_read_data,
 		mux_in2	=> lr_out,
-		mux_in3	=> alu_out,
-		mux_out	=> gpr_write_data
+		mux_in3	=> selected_data_f,
+		mux_out	=> selected_data
+	);
+
+	mux_f_data_src : multi_plexer4 port map (
+		sel		=> f_data_src,
+		mux_in0	=> fpu_out,
+		mux_in1	=> fadd_out,
+		mux_in2	=> fpu_out,
+		mux_in3	=> fpu_out,
+		mux_out	=> selected_data_f
 	);
 
 	mux_lr_src : multi_plexer2 port map (
@@ -428,12 +563,33 @@ begin
 	gpr_read_reg_num2 <= instruction(15 downto 11);
 	gpr_read_reg_num3 <= instruction(25 downto 21);
 	gpr_write_reg_num <= instruction(25 downto 21);
+	gpr_write_data    <= selected_data;
+
+	fpr_read_reg_num1 <= instruction(20 downto 16);
+	fpr_read_reg_num2 <= instruction(15 downto 11);
+	fpr_read_reg_num3 <= instruction(25 downto 21);
+	fpr_write_reg_num <= instruction(25 downto 21);
+	fpr_write_data    <= selected_data;
+
 	ext_in <= instruction(15 downto 0);
+
 	alu_in1 <= gpr_read_data1;
+
+	fpu_in1 <= fpr_read_data1;
+	fpu_in2 <= fpr_read_data2;
+
+	fadd_in1 <= fpr_read_data1;
+	fadd_in2 <= fpr_read_data2;
+
+	fmul_in1 <= fpr_read_data1;
+	fmul_in2 <= fpr_read_data2;
+
 	cr_in_g <= alu_cond;
+	cr_in_f <= fpu_cond;
+
 	ctr_in <= alu_out;
+
 	dmem_data_address <= alu_out(19 downto 0);
-	dmem_write_data <= gpr_read_data3;
 
 	-- generate clock for the simulation
 	clockgen : process

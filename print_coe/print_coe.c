@@ -1,51 +1,47 @@
 #include <stdio.h>
 
-void print_m_bit_bin_of_n(int n, int m) {
-
-	if (m > 1) {
-		print_m_bit_bin_of_n(n >> 1, m - 1);
-	}
-
-	printf("%d", n % 2);
-
-	return;
-}
-
-void print_onetwothree() {
-	int i;
-
-	printf("MEMORY_INITIALIZATION_RADIX=2;\n");
-	printf("MEMORY_INITIALIZATION_VECTOR=\n");
-
-	for (i = 0; i < 16384 - 1; i++) {
-		print_m_bit_bin_of_n(i, 32);
-		printf(",\n");
-	}
-
-	print_m_bit_bin_of_n(i, 32);
-	printf(";\n");
-
-	return;
-}
-
-void print_zero() {
-	int i;
-
-	printf("MEMORY_INITIALIZATION_RADIX=2;\n");
-	printf("MEMORY_INITIALIZATION_VECTOR=\n");
-
-	for (i = 0; i < 16384 - 1; i++) {
-		printf("00000000000000000000000000000000,\n");
-	}
-
-	printf("00000000000000000000000000000000;\n");
-
-	return;
-}
-
 int main(int argc, char *argv[]) {
+	FILE *dst, *src;
+	char line[34];
+	int count = 0;
 
-	print_zero();
+	if (argc == 1 || argc > 3) {
+		printf("print_coe source [destination]\n");
+		return 0;
+	} else if (argc == 2) {
+		if ((dst = fopen("out.coe", "w")) == NULL) {
+			perror("fopen");
+			return 1;
+		}
+	} else if (argc == 3) {
+		if ((dst = fopen(argv[2], "w")) == NULL) {
+			perror("fopen");
+			return 1;
+		}
+	}
+
+	if ((src = fopen(argv[1], "r")) == NULL) {
+		perror("fopen");
+		return 1;
+	}
+
+	fprintf(dst, "MEMORY_INITIALIZATION_RADIX=2;\n");
+	fprintf(dst, "MEMORY_INITIALIZATION_VECTOR=\n");
+
+	while (fgets(line, 34, src) != NULL) {
+		line[32] = '\0';
+		fprintf(dst, "%s,\n", line);
+		count++;
+	}
+
+	while (count < 16383) {
+		fprintf(dst, "00000000000000000000000000000000,\n");
+		count++;
+	}
+
+	fprintf(dst, "00000000000000000000000000000000;\n");
+
+	fclose(src);
 
 	return 0;
 }

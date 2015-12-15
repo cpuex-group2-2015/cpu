@@ -23,13 +23,14 @@ end sram_for_sim;
 
 architecture struct of sram_for_sim is
 
-	signal ZDdebug : std_logic_vector (31 downto 0) := (others => 'Z');
+	type ram_t is array(0 to 262143) of std_logic_vector (31 downto 0);
+	-- for ffact
+	signal mem : ram_t := ("01000000010000000000000000000000", "01001110011011100110101100101000", "01000011011111110000000000000000", "00000000000000000000000000000000", "00111111100000000000000000000000", others => (others => '0'));
+	-- for fadd_fsub_fmul
+	--signal mem : ram_t := ("00000000000000000000000000000000", "00111111000000000000000000000000", "00111110100000000000000000000000", others => (others => '0'));
 
-	type ram_t is array(1048575 downto 0) of std_logic_vector (31 downto 0);	-- 1048576
-	signal mem : ram_t := (others => (others => '0'));
-
-	signal state   : std_logic                      := '0';
-	signal address : std_logic_vector (19 downto 0) := (others => '0');
+	signal state   : std_logic                      := '1';
+	signal address : std_logic_vector (17 downto 0) := (others => '0');
 
 begin
 
@@ -46,10 +47,9 @@ begin
 			end if;
 
 			ZD <= ZDtmp;
-			ZDdebug <= ZDtmp;
 
 			state   <= XWA;
-			address <= ZA;
+			address <= ZA(19 downto 2);
 		end if;
 	end process;
 

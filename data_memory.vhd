@@ -29,7 +29,6 @@ end data_memory;
 
 architecture struct of data_memory is
 
-	signal ZDdebug : std_logic_vector (31 downto 0) := (others => 'Z');
 	signal state   : std_logic                      := '0';
 	signal data    : std_logic_vector (31 downto 0) := (others => '0');
 
@@ -58,10 +57,8 @@ begin
 		if (rising_edge(clk)) then
 			if (state = '0') then
 				ZD      <= (others => 'Z');
-				ZDdebug <= (others => 'Z');
 			else
 				ZD <= data;
-				ZDdebug <= data;
 			end if;
 
 			-- 更新

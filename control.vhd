@@ -9,6 +9,8 @@ entity control is
 		sub_opcode        : in  std_logic_vector (9 downto 0);
 		branch_op         : in  std_logic_vector (3 downto 0);
 		cr                : in  std_logic_vector (3 downto 0);
+		sender_full       : in  std_logic;
+		recver_empty      : in  std_logic;
 		gpr_write_enable  : out std_logic                     := '0';
 		fpr_write_enable  : out std_logic                     := '0';
 		dmem_write_enable : out std_logic                     := '0';
@@ -22,22 +24,24 @@ entity control is
 		dmem_src          : out std_logic                     := '0';
 		fpu_op            : out std_logic_vector (1 downto 0) := (others => '0');
 		fadd_op           : out std_logic                     := '0';
-		data_src          : out std_logic_vector (1 downto 0) := (others => '0');
-		f_data_src        : out std_logic_vector (1 downto 0) := (others => '0');
+		data_src          : out std_logic_vector (2 downto 0) := (others => '0');
 		lr_src            : out std_logic                     := '0';
 		ia_src            : out std_logic_vector (1 downto 0) := (others => '0');
-		stall_src         : out std_logic                     := '0'
+		stall_src         : out std_logic                     := '0';
+		sender_send       : out std_logic                     := '0';
+		recver_recv       : out std_logic                     := '0'
 	);
 end control;
 
 architecture struct of control is
 
-	signal wait_count : std_logic_vector(1 downto 0) := "00";
+	signal wait_count : std_logic_vector(2 downto 0) := (others => '0');
 
 begin
 
 	gpr_write_enable <= '1'
-		when   (opcode = "100000"					-- ld
+		when   (opcode = "000010"					-- recv
+			or  opcode = "100000"					-- ld
 			or  opcode = "001110"					-- addi
 			or  opcode = "001111"					-- addis
 			or  opcode = "011100"					-- andi
@@ -71,8 +75,10 @@ begin
 
 	dmem_write_enable <= '1'
 		when   (opcode = "100100"					-- st
+			or  opcode = "110100"					-- stf
 			or (opcode = "011111"
-				and sub_opcode = "0010010111"))		-- stx
+				and (sub_opcode = "0010010111"		-- stx
+				or   sub_opcode = "1010010111")))	-- stfx
 		else '0';
 
 	cr_g_write_enable <= '1'
@@ -102,7 +108,9 @@ begin
 				or  opcode = "010000")	-- bc, bcl
 		else "01"
 			when   (opcode = "100000"	-- ld
+				or  opcode = "110010"	-- lf
 				or  opcode = "100100"	-- st
+				or  opcode = "110100"	-- stf
 				or  opcode = "001110"	-- addi
 				or  opcode = "001011"	-- cmpi
 				or  opcode = "011110")	-- cmp
@@ -112,12 +120,16 @@ begin
 
 	alu_op <= "000"
 			when   (opcode = "100000"					-- ld
+				or  opcode = "110010"					-- lf
 				or  opcode = "100100"					-- st
+				or  opcode = "110100"					-- stf
 				or  opcode = "001110"					-- addi
 				or  opcode = "001111"					-- addis
 				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
+					or   sub_opcode = "1001010111"		-- lfx
 					or   sub_opcode = "0010010111"		-- stx
+					or   sub_opcode = "1010010111"		-- stfx
 					or   sub_opcode = "0100001010")))	-- add
 		else "001"
 			when   (opcode = "011111"
@@ -145,7 +157,9 @@ begin
 
 	alu_src <= '1'
 			when   (opcode = "100000"					-- ld
+				or  opcode = "110010"					-- lf
 				or  opcode = "100100"					-- st
+				or  opcode = "110100"					-- stf
 				or  opcode = "001110"					-- addi
 				or  opcode = "001111"					-- addis
 				or  opcode = "011100"					-- andi
@@ -156,7 +170,9 @@ begin
 				or  opcode = "010101"					-- mfgtf
 				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
+					or   sub_opcode = "1001010111"		-- lfx
 					or   sub_opcode = "0010010111"		-- stx
+					or   sub_opcode = "1010010111"		-- stfx
 					or   sub_opcode = "0100001010"		-- add
 					or   sub_opcode = "0000011100"		-- and
 					or   sub_opcode = "0110111100"		-- or
@@ -167,7 +183,8 @@ begin
 		else '-';
 
 	dmem_src <= '0'
-			when   (opcode = "100100"					-- st
+			when   (opcode = "000001"					-- send
+				or  opcode = "100100"					-- st
 				or (opcode = "011111"
 					and sub_opcode = "0010010111"))		-- stx
 		else '1'
@@ -192,12 +209,12 @@ begin
 		else "--";
 
 	fadd_op <= '0'
-			when (opcode = "011111" and sub_opcode = "0000010101")	-- fadd
+			when (opcode = "111111" and sub_opcode = "0000010101")	-- fadd
 		else '1'
-			when (opcode = "011111" and sub_opcode = "0000010100")	-- fsub
+			when (opcode = "111111" and sub_opcode = "0000010100")	-- fsub
 		else '-';
 
-	data_src <= "00"
+	data_src <= "000"
 			when   (opcode = "001110"					-- addi
 				or  opcode = "001111"					-- addis
 				or  opcode = "011100"					-- andi
@@ -210,44 +227,34 @@ begin
 					or   sub_opcode = "0110111100"		-- or
 					or   sub_opcode = "0000011000"		-- sl
 					or   sub_opcode = "1000011000")))	-- sr
-		else "01"
+		else "001"
 			when   (opcode = "100000"					-- ld
 				or  opcode = "110010"					-- lf
 				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
 					or   sub_opcode = "1001010111")))	-- lfx
-		else "10"
+		else "010"
 			when   (opcode = "011111"
 					and  sub_opcode = "0101010011")		-- mflr
-		else "11"
-			when   (opcode = "010110"					-- mfftg
-				or (opcode = "111111"
-					and (sub_opcode = "0001001000"		-- fmr
-					or   sub_opcode = "0000010101"		-- fadd
-					or   sub_opcode = "0000010100"		-- fsub
-					or   sub_opcode = "0000011001"		-- fmul
-					or   sub_opcode = "0000010010"		-- fdiv
-					or   sub_opcode = "0000101000"		-- fneg
-					or   sub_opcode = "0100001000")))	-- fabs
-		else "--";
-
-	f_data_src <= "00"
+		else "011"
+			when   (opcode = "000010")					-- recv
+		else "100"
 			when   (opcode = "010110"					-- mfftg
 				or (opcode = "111111"
 					and (sub_opcode = "0001001000"		-- fmr
 					or   sub_opcode = "0000101000"		-- fneg
 					or   sub_opcode = "0100001000")))	-- fabs
-		else "01"
+		else "101"
 			when   (opcode = "111111"
 					and (sub_opcode = "0000010101"		-- fadd
 					or   sub_opcode = "0000010100"))	-- fsub
-		else "10"
+		else "110"
 			when   (opcode = "111111"
 					and  sub_opcode = "0000011001")		-- fmul
-		else "11"
+		else "111"
 			when   (opcode = "111111"
 					and  sub_opcode = "0000010010")		-- fdiv
-		else "--";
+		else "---";
 
 	lr_src <= '1'
 			when   (opcode = "011111" and sub_opcode = "0111010011")	-- mtlr
@@ -267,46 +274,59 @@ begin
 		else "00";
 
 	stall_src <= '1'
-		when (wait_count /= "10"	-- 3clk instructions
+		when (opcode = "000010" and recver_empty = '1')	-- recv
+		or (wait_count /= "100"	-- 5clk instructions
+			and (opcode = "111111"
+				and (sub_opcode = "0000010101"		-- fadd
+				or   sub_opcode = "0000010100"		-- fsub
+				or   sub_opcode = "0000011001")))	-- fmul
+		or (wait_count /= "010"	-- 3clk instructions
 			and (opcode = "100000"					-- ld
-			or   opcode = "100100"					-- st
 			or   opcode = "110010"					-- lf
+			or   opcode = "100100"					-- st
 			or   opcode = "110100"					-- stf
 			or  (opcode = "011111"
 				and (sub_opcode = "0000010111"		-- ldx
 				or   sub_opcode = "1001010111"		-- lfx
 				or   sub_opcode = "0010010111"		-- stx
-				or   sub_opcode = "1010010111"))	-- stfx
-			or  (opcode = "111111"
-				and (sub_opcode = "0000010101"		-- fadd
-				or   sub_opcode = "0000010100"		-- fsub
-				or   sub_opcode = "0000011001"))))	-- fmul
+				or   sub_opcode = "1010010111"))))	-- stfx
 		else '0';
 
 	process (clk, opcode, sub_opcode, branch_op, cr)
 	begin
 		if (rising_edge(clk)) then
-			if      (opcode = "100000"						-- ld
-				or   opcode = "100100"						-- st
+			-- 5clk instructions
+			if  (opcode = "111111"
+				and (sub_opcode = "0000010101"			-- fadd
+				or   sub_opcode = "0000010100"			-- fsub
+				or   sub_opcode = "0000011001")) then	-- fmul
+
+				if (wait_count = "100") then
+						wait_count <= "000";
+				else
+						wait_count <= wait_count + 1;
+				end if;
+			-- 3clk instructions
+			elsif      (opcode = "100000"						-- ld
 				or   opcode = "110010"						-- lf
+				or   opcode = "100100"						-- st
 				or   opcode = "110100"						-- stf
 				or  (opcode = "011111"
 					and (sub_opcode = "0000010111"			-- ldx
 					or   sub_opcode = "1001010111"			-- lfx
 					or   sub_opcode = "0010010111"			-- stx
-					or   sub_opcode = "1010010111"))		-- stfx
-				or  (opcode = "111111"
-					and (sub_opcode = "0000010101"			-- fadd
-					or   sub_opcode = "0000010100"			-- fsub
-					or   sub_opcode = "0000011001"))) then	-- fmul
+					or   sub_opcode = "1010010111"))) then	-- stfx
 
-				if (wait_count = "10") then
-						wait_count <= "00";
+				if (wait_count = "010") then
+						wait_count <= "000";
 				else
 						wait_count <= wait_count + 1;
 				end if;
 			end if;
 		end if;
 	end process;
+
+	sender_send <= '1' when (opcode = "000001")	-- send
+		else '0';
 
 end;

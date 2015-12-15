@@ -34,6 +34,6 @@ begin
 		output  => fadd_out
 	);
 
-	input_b <= (not fadd_in2(31)) & fadd_in2(30 downto 0);
+	input_b <= (not fadd_in2(31)) & fadd_in2(30 downto 0) when fadd_op = '1' else fadd_in2;
 	
 end;

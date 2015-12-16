@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
 	int count = 0;
 
 	if (argc == 1 || argc > 3) {
-		printf("print_coe source [destination]\n");
+		printf("zero_to_coe source [destination]\n");
 		return 0;
 	} else if (argc == 2) {
 		if ((dst = fopen("out.coe", "w")) == NULL) {

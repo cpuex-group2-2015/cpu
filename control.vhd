@@ -329,4 +329,7 @@ begin
 	sender_send <= '1' when (opcode = "000001")	-- send
 		else '0';
 
+	recver_recv <= '1' when (opcode = "000010")	-- recv
+		else '0';
+
 end;

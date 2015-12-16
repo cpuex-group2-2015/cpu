@@ -57,7 +57,10 @@ begin
 
 	recver_empty <= fifo_empty;
 	recver_out <= fifo_dout;
-	fifo_rd_en <= recver_recv;
+
+	fifo_rd_en <= recver_recv when (fifo_empty = '0')
+		else '0';
+
 	fifo_din <= recv_buf;
 
 	-- recv

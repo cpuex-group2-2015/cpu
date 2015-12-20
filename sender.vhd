@@ -79,7 +79,7 @@ begin
 				end if;
 			when sending_start_bit =>
 				sender_out <= '0';
-				if (count = x"1B16") then
+				if (count = x"0242") then
 					state <= sending_data;
 					count <= x"0000";
 				else
@@ -87,7 +87,7 @@ begin
 				end if;
 			when sending_data =>
 				sender_out <= send_buf(byte_count * 8 + bit_count);
-				if (count = x"1B16") then
+				if (count = x"0242") then
 					if (bit_count = 7) then
 						state <= sending_stop_bit;
 						bit_count <= 0;
@@ -100,7 +100,7 @@ begin
 				end if;
 			when sending_stop_bit =>
 				sender_out <= '1';
-				if (count = x"1B16") then
+				if (count = x"0242") then
 					if (byte_count = 3) then
 						state <= ready;
 						byte_count <= 0;

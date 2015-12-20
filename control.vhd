@@ -68,7 +68,7 @@ begin
 				or   sub_opcode = "0000010101"		-- fadd
 				or   sub_opcode = "0000010100"		-- fsub
 				or   sub_opcode = "0000011001"		-- fmul
-				or   sub_opcode = "0000010010"		-- fdiv
+				or   sub_opcode = "0000010010"		-- finv
 				or   sub_opcode = "0000101000"		-- fneg
 				or   sub_opcode = "0100001000")))	-- fabs
 		else '0';
@@ -112,8 +112,7 @@ begin
 				or  opcode = "100100"	-- st
 				or  opcode = "110100"	-- stf
 				or  opcode = "001110"	-- addi
-				or  opcode = "001011"	-- cmpi
-				or  opcode = "011110")	-- cmp
+				or  opcode = "001011")	-- cmpi
 		else "11"
 			when   (opcode = "001111")	-- addis
 		else "--";
@@ -147,9 +146,9 @@ begin
 					or   sub_opcode = "0111010011"		-- mtlr
 					or   sub_opcode = "0111010100")))	-- mtctr
 		else "100"
-			when   (opcode = "0000011000")				-- sl
+			when   (opcode = "011111" and sub_opcode = "0000011000")				-- sl
 		else "101"
-			when   (opcode = "1000011000")				-- sr
+			when   (opcode = "011111" and sub_opcode = "1000011000")				-- sr
 		else "110"
 			when   (opcode = "001011"					-- cmpi
 				or  opcode = "011110")					-- cmp
@@ -253,7 +252,7 @@ begin
 					and  sub_opcode = "0000011001")		-- fmul
 		else "111"
 			when   (opcode = "111111"
-					and  sub_opcode = "0000010010")		-- fdiv
+					and  sub_opcode = "0000010010")		-- finv
 		else "---";
 
 	lr_src <= '1'
@@ -274,12 +273,14 @@ begin
 		else "00";
 
 	stall_src <= '1'
-		when (opcode = "000010" and recver_empty = '1')	-- recv
+		when (opcode = "000001" and sender_full = '1')	-- send
+		or   (opcode = "000010" and recver_empty = '1')	-- recv
 		or (wait_count /= "100"	-- 5clk instructions
 			and (opcode = "111111"
 				and (sub_opcode = "0000010101"		-- fadd
 				or   sub_opcode = "0000010100"		-- fsub
-				or   sub_opcode = "0000011001")))	-- fmul
+				or   sub_opcode = "0000011001"		-- fmul
+				or   sub_opcode = "0000010010")))	-- finv
 		or (wait_count /= "010"	-- 3clk instructions
 			and (opcode = "100000"					-- ld
 			or   opcode = "110010"					-- lf
@@ -299,7 +300,8 @@ begin
 			if  (opcode = "111111"
 				and (sub_opcode = "0000010101"			-- fadd
 				or   sub_opcode = "0000010100"			-- fsub
-				or   sub_opcode = "0000011001")) then	-- fmul
+				or   sub_opcode = "0000011001"			-- fmul
+				or   sub_opcode = "0000010010")) then	-- finv
 
 				if (wait_count = "100") then
 						wait_count <= "000";
@@ -307,7 +309,7 @@ begin
 						wait_count <= wait_count + 1;
 				end if;
 			-- 3clk instructions
-			elsif      (opcode = "100000"						-- ld
+			elsif (opcode = "100000"						-- ld
 				or   opcode = "110010"						-- lf
 				or   opcode = "100100"						-- st
 				or   opcode = "110100"						-- stf

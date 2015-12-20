@@ -136,6 +136,14 @@ architecture struct of core is
 		);
 	end component;
 
+	component finv is
+		port (
+			clk    : in  std_logic;
+			input  : in  std_logic_vector (31 downto 0);
+			output : out std_logic_vector (31 downto 0)
+		);
+	end component;
+
 	component extend is
 		port (
 			ext_op  : in  std_logic_vector (1 downto 0);
@@ -314,6 +322,9 @@ architecture struct of core is
 	signal fmul_in2  : std_logic_vector (31 downto 0) := (others => '0');
 	signal fmul_out  : std_logic_vector (31 downto 0) := (others => '0');
 
+	signal finv_in   : std_logic_vector (31 downto 0) := (others => '0');
+	signal finv_out  : std_logic_vector (31 downto 0) := (others => '0');
+
 	signal ext_op  : std_logic_vector (1 downto 0)  := (others => '0');
 	signal ext_in  : std_logic_vector (15 downto 0) := (others => '0');
 	signal ext_out : std_logic_vector (31 downto 0) := (others => '0');
@@ -446,6 +457,12 @@ begin
 		output  => fmul_out
 	);
 
+	fi : finv port map (
+		clk    => clk,
+		input  => finv_in,
+		output => finv_out
+	);
+
 	ext : extend port map (
 		ext_op  => ext_op,
 		ext_in  => ext_in,
@@ -478,7 +495,7 @@ begin
 	send : sender port map (
 		clk         => clk,
 		sender_send => sender_send,
-		sender_in     => sender_in  ,
+		sender_in   => sender_in,
 		sender_full => sender_full,
 		sender_out  => sender_out
 	);
@@ -550,7 +567,7 @@ begin
 		mux_in4	=> fpu_out,
 		mux_in5	=> fadd_out,
 		mux_in6	=> fmul_out,
-		mux_in7	=> fpu_out,
+		mux_in7	=> finv_out,
 		mux_out	=> selected_data
 	);
 
@@ -577,7 +594,7 @@ begin
 		mux_out	=> instruction_address
 	);
 
-	pc_in <= instruction_address when (instruction_address >= "11111111111111")
+	pc_in <= instruction_address when (instruction_address = "11111111111111")
 		else instruction_address + 1;
 
 	ia_minus_one <= selected_ia - 1;
@@ -606,6 +623,8 @@ begin
 
 	fmul_in1 <= fpr_read_data1;
 	fmul_in2 <= fpr_read_data2;
+
+	finv_in <= fpr_read_data2;
 
 	cr_in_g <= alu_cond;
 	cr_in_f <= fpu_cond;

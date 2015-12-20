@@ -79,14 +79,14 @@ begin
 					state          <= recving_start_bit;
 				end if;
 			when recving_start_bit =>
-				if (count = x"0D8B") then
+				if (count = x"0121") then
 					state <= recving_data;
 					count <= x"0000";
 				else
 					count <= count + 1;
 				end if;
 			when recving_data =>
-				if (count = x"1B16") then
+				if (count = x"0242") then
 					recv_buf(byte_count * 8 + bit_count) <= recver_in;
 					if (bit_count = 7) then
 						state <= recving_stop_bit;
@@ -99,7 +99,7 @@ begin
 					count <= count + 1;
 				end if;
 			when recving_stop_bit =>
-				if (count = x"1B16") then
+				if (count = x"0242") then
 					state <= ready;
 					if (byte_count = 3) then
 						fifo_wr_en_tmp := '1';

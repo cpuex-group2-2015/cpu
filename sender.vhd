@@ -14,22 +14,22 @@ end sender;
 
 architecture struct of sender is
 
-	component fifo32_send
+	component fifo8_send
 		port (
 			clk   : in  std_logic;
 			wr_en : in  std_logic;
 			rd_en : in  std_logic;
-			din   : in  std_logic_vector (31 downto 0);
-			dout  : out std_logic_vector (31 downto 0);
+			din   : in  std_logic_vector (7 downto 0);
+			dout  : out std_logic_vector (7 downto 0);
 			full  : out std_logic;
 			empty : out std_logic
 		);
 	end component;
 
-	signal fifo_wr_en : std_logic                      := '0';
-	signal fifo_rd_en : std_logic                      := '0';
-	signal fifo_din   : std_logic_vector (31 downto 0) := (others => '0');
-	signal fifo_dout  : std_logic_vector (31 downto 0);
+	signal fifo_wr_en : std_logic                     := '0';
+	signal fifo_rd_en : std_logic                     := '0';
+	signal fifo_din   : std_logic_vector (7 downto 0) := (others => '0');
+	signal fifo_dout  : std_logic_vector (7 downto 0);
 	signal fifo_full  : std_logic;
 	signal fifo_empty : std_logic;
 
@@ -39,13 +39,12 @@ architecture struct of sender is
 	signal count : std_logic_vector (15 downto 0) := (others=> '0');
 
 	signal bit_count  : integer := 0;
-	signal byte_count : integer := 0;
 
-	signal send_buf : std_logic_vector (31 downto 0) := (others => '0');
+	signal send_buf : std_logic_vector (7 downto 0) := (others => '0');
 
 begin
 
-	fifo : fifo32_send port map (
+	fifo : fifo8_send port map (
 		clk   => clk,
 		wr_en => fifo_wr_en,
 		rd_en => fifo_rd_en,
@@ -57,7 +56,7 @@ begin
 
 	sender_full <= fifo_full;
 	fifo_wr_en <= sender_send;
-	fifo_din <= sender_in;
+	fifo_din <= sender_in(7 downto 0);
 
 	-- send
 	process (clk)
@@ -86,7 +85,7 @@ begin
 					count <= count + 1;
 				end if;
 			when sending_data =>
-				sender_out <= send_buf(byte_count * 8 + bit_count);
+				sender_out <= send_buf(bit_count);
 				if (count = x"0242") then
 					if (bit_count = 7) then
 						state <= sending_stop_bit;
@@ -101,13 +100,7 @@ begin
 			when sending_stop_bit =>
 				sender_out <= '1';
 				if (count = x"0242") then
-					if (byte_count = 3) then
-						state <= ready;
-						byte_count <= 0;
-					else
-						state <= sending_start_bit;
-						byte_count <= byte_count + 1;
-					end if;
+					state <= ready;
 					count <= x"0000";
 				else
 					count <= count + 1;

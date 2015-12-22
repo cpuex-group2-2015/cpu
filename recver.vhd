@@ -14,22 +14,22 @@ end recver;
 
 architecture struct of recver is
 
-	component fifo32_recv
+	component fifo8_recv
 		port (
 			clk   : in  std_logic;
 			wr_en : in  std_logic;
 			rd_en : in  std_logic;
-			din   : in  std_logic_vector (31 downto 0);
-			dout  : out std_logic_vector (31 downto 0);
+			din   : in  std_logic_vector (7 downto 0);
+			dout  : out std_logic_vector (7 downto 0);
 			full  : out std_logic;
 			empty : out std_logic
 		);
 	end component;
 
-	signal fifo_wr_en : std_logic                      := '0';
-	signal fifo_rd_en : std_logic                      := '0';
-	signal fifo_din   : std_logic_vector (31 downto 0) := (others => '0');
-	signal fifo_dout  : std_logic_vector (31 downto 0);
+	signal fifo_wr_en : std_logic                     := '0';
+	signal fifo_rd_en : std_logic                     := '0';
+	signal fifo_din   : std_logic_vector (7 downto 0) := (others => '0');
+	signal fifo_dout  : std_logic_vector (7 downto 0);
 	signal fifo_full  : std_logic;
 	signal fifo_empty : std_logic;
 
@@ -39,13 +39,12 @@ architecture struct of recver is
 	signal count : std_logic_vector (15 downto 0) := (others=> '0');
 
 	signal bit_count  : integer := 0;
-	signal byte_count : integer := 0;
 
-	signal recv_buf : std_logic_vector (31 downto 0) := (others => '0');
+	signal recv_buf : std_logic_vector (7 downto 0) := (others => '0');
 
 begin
 
-	fifo : fifo32_recv port map (
+	fifo : fifo8_recv port map (
 		clk   => clk,
 		wr_en => fifo_wr_en,
 		rd_en => fifo_rd_en,
@@ -56,7 +55,7 @@ begin
 	);
 
 	recver_empty <= fifo_empty;
-	recver_out <= fifo_dout;
+	recver_out <= "000000000000000000000000" & fifo_dout;
 
 	fifo_rd_en <= recver_recv when (fifo_empty = '0')
 		else '0';
@@ -87,7 +86,7 @@ begin
 				end if;
 			when recving_data =>
 				if (count = x"0242") then
-					recv_buf(byte_count * 8 + bit_count) <= recver_in;
+					recv_buf(bit_count) <= recver_in;
 					if (bit_count = 7) then
 						state <= recving_stop_bit;
 						bit_count <= 0;
@@ -101,12 +100,7 @@ begin
 			when recving_stop_bit =>
 				if (count = x"0242") then
 					state <= ready;
-					if (byte_count = 3) then
-						fifo_wr_en_tmp := '1';
-						byte_count <= 0;
-					else
-						byte_count <= byte_count + 1;
-					end if;
+					fifo_wr_en_tmp := '1';
 					count <= x"0000";
 				else
 					count <= count + 1;

@@ -362,11 +362,7 @@ architecture struct of core is
 
 	signal selected_data : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal is_12A : std_logic := '0';
-
 begin
-
-	is_12A <= '1' when (instruction_address = "00000000000000000000000100101010") else '0';
 
 	-- port map
 	pc : program_counter port map (

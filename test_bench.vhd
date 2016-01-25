@@ -48,6 +48,13 @@ architecture testbench of testbench is
 		);
 	end component;
 
+	component recver_for_sim is
+		port (
+			clk          : in  std_logic;
+			recver_in    : in  std_logic
+		);
+	end component;
+
 	signal simclk : std_logic;
 
 	signal RS_RX : std_logic;
@@ -107,6 +114,11 @@ begin
 		XFT    => XFT,
 		XZBE   => XZBE,
 		ZCLKMA => ZCLKMA
+	);
+
+	recv : recver_for_sim port map (
+		clk       => simclk,
+		recver_in => RS_TX
 	);
 
 	-- generate clock for the simulation

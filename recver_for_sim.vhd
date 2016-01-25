@@ -1,37 +1,19 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
+use IEEE.std_logic_textio.all;
+use STD.TEXTIO.all;
 
-entity recver is
+entity recver_for_sim is
 	port (
 		clk          : in  std_logic;
-		recver_recv  : in  std_logic;
-		recver_in    : in  std_logic;
-		recver_empty : out std_logic;
-		recver_out   : out std_logic_vector (31 downto 0)
+		recver_in    : in  std_logic
 	);
-end recver;
+end recver_for_sim;
 
-architecture struct of recver is
+architecture struct of recver_for_sim is
 
-	component fifo8_recv
-		port (
-			clk   : in  std_logic;
-			wr_en : in  std_logic;
-			rd_en : in  std_logic;
-			din   : in  std_logic_vector (7 downto 0);
-			dout  : out std_logic_vector (7 downto 0);
-			full  : out std_logic;
-			empty : out std_logic
-		);
-	end component;
-
-	signal fifo_wr_en : std_logic                     := '0';
-	signal fifo_rd_en : std_logic                     := '0';
-	signal fifo_din   : std_logic_vector (7 downto 0) := (others => '0');
-	signal fifo_dout  : std_logic_vector (7 downto 0);
-	signal fifo_full  : std_logic;
-	signal fifo_empty : std_logic;
+	file text_out : text is out "/home/ykon/Desktop/cpuex/1stISA_Powerless_PC/out.txt";
 
 	type state_t is (ready, recving_start_bit, recving_data, recving_stop_bit);
 	signal state : state_t := ready;
@@ -48,34 +30,11 @@ architecture struct of recver is
 
 begin
 
-	fifo : fifo8_recv port map (
-		clk   => clk,
-		wr_en => fifo_wr_en,
-		rd_en => fifo_rd_en,
-		din   => fifo_din,
-		dout  => fifo_dout,
-		full  => fifo_full,
-		empty => fifo_empty
-	);
-
-	recver_empty <= fifo_empty;
-	recver_out <= "000000000000000000000000" & fifo_dout;
-
-	fifo_rd_en <= recver_recv when (fifo_empty = '0')
-		else '0';
-
-	fifo_din <= recv_buf;
-
 	-- recv
 	process (clk)
-
-		variable fifo_wr_en_tmp : std_logic := '0';
-
+		variable line_out : line;
 	begin
 		if rising_edge(clk) then
-
-			fifo_wr_en_tmp := '0';
-
 			case state is
 			when ready =>	-- waiting for start bit
 				if (recver_in = '0') then
@@ -104,7 +63,8 @@ begin
 			when recving_stop_bit =>
 				if (count = wtime) then
 					state <= ready;
-					fifo_wr_en_tmp := '1';
+					write(line_out, recv_buf, LEFT, 8);
+					writeline(text_out, line_out);
 					count <= x"0000";
 				else
 					count <= count + 1;
@@ -112,8 +72,6 @@ begin
 			when others =>
 				state <= ready;
 			end case;
-
-			fifo_wr_en <= fifo_wr_en_tmp;
 		end if;
 	end process;
 

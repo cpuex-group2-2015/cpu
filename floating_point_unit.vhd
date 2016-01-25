@@ -40,6 +40,10 @@ begin
 			if ((fpu_in1(30 downto 23) = "11111111" and fpu_in1(22 downto 0) /= "00000000000000000000000") or (fpu_in2(30 downto 23) = "11111111" and fpu_in2(22 downto 0) /= "00000000000000000000000")) then
 				fpu_cond <= "0001";
 
+			-- fpu_in1 = fpu_in2 = 0
+			elsif (fpu_in1(30 downto 0) = "000000000000000000000000000000" and fpu_in2(30 downto 0) = "000000000000000000000000000000") then
+				fpu_cond <= "0010";				
+
 			-- fpu_in1 < fpu_in2
 			elsif ((fpu_in1(31) = '0' and fpu_in2(31) = '0' and fpu_in1(30 downto 0) < fpu_in2(30 downto 0))
 				or (fpu_in1(31) = '1' and fpu_in2(31) = '1' and fpu_in1(30 downto 0) > fpu_in2(30 downto 0))
@@ -54,7 +58,7 @@ begin
 			
 			-- fpu_in1 = fpu_in2
 			else
-				fpu_cond <= "0010";	
+				fpu_cond <= "0010";
 			end if;
 		when others =>
 			fpu_out <= fpu_in1;

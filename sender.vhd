@@ -36,11 +36,15 @@ architecture struct of sender is
 	type state_t is (ready, sending_start_bit, sending_data, sending_stop_bit);
 	signal state : state_t := ready;
 
-	signal count : std_logic_vector (15 downto 0) := (others=> '0');
+	constant wtime : std_logic_vector (15 downto 0) := x"0242";		-- 115200
+	--constant wtime : std_logic_vector (15 downto 0) := x"1B16";		-- 9600
+	signal   count : std_logic_vector (15 downto 0) := (others=> '0');
 
 	signal bit_count  : integer := 0;
 
 	signal send_buf : std_logic_vector (7 downto 0) := (others => '0');
+
+	signal is_one : std_logic := '0';
 
 begin
 
@@ -57,6 +61,8 @@ begin
 	sender_full <= fifo_full;
 	fifo_wr_en <= sender_send;
 	fifo_din <= sender_in(7 downto 0);
+
+	is_one <= '1' when (sender_in = x"31" and sender_send = '1') else '0';
 
 	-- send
 	process (clk)
@@ -78,7 +84,7 @@ begin
 				end if;
 			when sending_start_bit =>
 				sender_out <= '0';
-				if (count = x"0242") then
+				if (count = wtime) then
 					state <= sending_data;
 					count <= x"0000";
 				else
@@ -86,7 +92,7 @@ begin
 				end if;
 			when sending_data =>
 				sender_out <= send_buf(bit_count);
-				if (count = x"0242") then
+				if (count = wtime) then
 					if (bit_count = 7) then
 						state <= sending_stop_bit;
 						bit_count <= 0;
@@ -99,7 +105,7 @@ begin
 				end if;
 			when sending_stop_bit =>
 				sender_out <= '1';
-				if (count = x"0242") then
+				if (count = wtime) then
 					state <= ready;
 					count <= x"0000";
 				else

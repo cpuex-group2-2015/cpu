@@ -43,8 +43,8 @@ begin
 	body_in1 <= fadd_in1;
 	body_in2 <= (not fadd_in2(31)) & fadd_in2(30 downto 0) when fadd_op = '1' else fadd_in2;
 
-	fadd_out <= inputs1(3) when (inputs2(3)(30 downto 0) = "0000000000000000000000000000000")
-		   else inputs2(3) when (inputs1(3)(30 downto 0) = "0000000000000000000000000000000")
+	fadd_out <= inputs1(3) when (inputs2(3)(30 downto 23) = "00000000")
+		   else inputs2(3) when (inputs1(3)(30 downto 23) = "00000000")
 		   else body_out;
 
 	process(clk)

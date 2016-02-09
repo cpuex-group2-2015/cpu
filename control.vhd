@@ -59,10 +59,10 @@ begin
 		else '0';
 
 	fpr_write_enable <= '1'
-		when   (opcode = "110010"					-- lf
+		when   (opcode = "110010"					-- ldf
 			or  opcode = "010101"					-- mfgtf
 			or (opcode = "011111"
-				and  sub_opcode = "1001010111")		-- lfx
+				and  sub_opcode = "1001010111")		-- ldfx
 			or (opcode = "111111"
 				and (sub_opcode = "0001001000"		-- fmr
 				or   sub_opcode = "0000010101"		-- fadd
@@ -108,7 +108,7 @@ begin
 				or  opcode = "010000")	-- bc, bcl
 		else "01"
 			when   (opcode = "100000"	-- ld
-				or  opcode = "110010"	-- lf
+				or  opcode = "110010"	-- ldf
 				or  opcode = "100100"	-- st
 				or  opcode = "110100"	-- stf
 				or  opcode = "001110"	-- addi
@@ -119,14 +119,14 @@ begin
 
 	alu_op <= "000"
 			when   (opcode = "100000"					-- ld
-				or  opcode = "110010"					-- lf
+				or  opcode = "110010"					-- ldf
 				or  opcode = "100100"					-- st
 				or  opcode = "110100"					-- stf
 				or  opcode = "001110"					-- addi
 				or  opcode = "001111"					-- addis
 				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
-					or   sub_opcode = "1001010111"		-- lfx
+					or   sub_opcode = "1001010111"		-- ldfx
 					or   sub_opcode = "0010010111"		-- stx
 					or   sub_opcode = "1010010111"		-- stfx
 					or   sub_opcode = "0100001010")))	-- add
@@ -156,7 +156,7 @@ begin
 
 	alu_src <= '1'
 			when   (opcode = "100000"					-- ld
-				or  opcode = "110010"					-- lf
+				or  opcode = "110010"					-- ldf
 				or  opcode = "100100"					-- st
 				or  opcode = "110100"					-- stf
 				or  opcode = "001110"					-- addi
@@ -169,7 +169,7 @@ begin
 				or  opcode = "010101"					-- mfgtf
 				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
-					or   sub_opcode = "1001010111"		-- lfx
+					or   sub_opcode = "1001010111"		-- ldfx
 					or   sub_opcode = "0010010111"		-- stx
 					or   sub_opcode = "1010010111"		-- stfx
 					or   sub_opcode = "0100001010"		-- add
@@ -228,10 +228,10 @@ begin
 					or   sub_opcode = "1000011000")))	-- sr
 		else "001"
 			when   (opcode = "100000"					-- ld
-				or  opcode = "110010"					-- lf
+				or  opcode = "110010"					-- ldf
 				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
-					or   sub_opcode = "1001010111")))	-- lfx
+					or   sub_opcode = "1001010111")))	-- ldfx
 		else "010"
 			when   (opcode = "011111"
 					and  sub_opcode = "0101010011")		-- mflr
@@ -283,14 +283,10 @@ begin
 				or   sub_opcode = "0000010010")))	-- finv
 		or (wait_count /= "010"	-- 3clk instructions
 			and (opcode = "100000"					-- ld
-			or   opcode = "110010"					-- lf
-			or   opcode = "100100"					-- st
-			or   opcode = "110100"					-- stf
+			or   opcode = "110010"					-- ldf
 			or  (opcode = "011111"
 				and (sub_opcode = "0000010111"		-- ldx
-				or   sub_opcode = "1001010111"		-- lfx
-				or   sub_opcode = "0010010111"		-- stx
-				or   sub_opcode = "1010010111"))))	-- stfx
+				or   sub_opcode = "1001010111"))))	-- ldfx
 		else '0';
 
 	process (clk, opcode, sub_opcode, branch_op, cr)
@@ -310,14 +306,10 @@ begin
 				end if;
 			-- 3clk instructions
 			elsif (opcode = "100000"						-- ld
-				or   opcode = "110010"						-- lf
-				or   opcode = "100100"						-- st
-				or   opcode = "110100"						-- stf
+				or   opcode = "110010"						-- ldf
 				or  (opcode = "011111"
 					and (sub_opcode = "0000010111"			-- ldx
-					or   sub_opcode = "1001010111"			-- lfx
-					or   sub_opcode = "0010010111"			-- stx
-					or   sub_opcode = "1010010111"))) then	-- stfx
+					or   sub_opcode = "1001010111"))) then	-- ldfx
 
 				if (wait_count = "010") then
 						wait_count <= "000";

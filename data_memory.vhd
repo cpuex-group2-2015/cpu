@@ -10,7 +10,7 @@ entity data_memory is
 		dmem_write_data   : in  std_logic_vector (31 downto 0);
 		dmem_read_data    : out std_logic_vector (31 downto 0);
 
-		ZD     : inout std_logic_vector (31 downto 0);	-- データ線
+		ZD     : inout std_logic_vector (31 downto 0) := (others => 'Z');	-- データ線
 		ZA     : out   std_logic_vector (19 downto 0);	-- アドレス 
 		XWA    : out   std_logic;						-- write enable 線
 		XE1    : out   std_logic;						-- 0固定
@@ -29,8 +29,9 @@ end data_memory;
 
 architecture struct of data_memory is
 
-	signal state   : std_logic                      := '0';
-	signal data    : std_logic_vector (31 downto 0) := (others => '0');
+	signal state : std_logic := '0';
+
+	signal data : std_logic_vector (31 downto 0) := (others => '0');
 
 begin
 
@@ -56,7 +57,7 @@ begin
 	begin
 		if (rising_edge(clk)) then
 			if (state = '0') then
-				ZD      <= (others => 'Z');
+				ZD <= (others => 'Z');
 			else
 				ZD <= data;
 			end if;
@@ -68,5 +69,3 @@ begin
 	end process;
 
 end;
-
--- 

@@ -232,41 +232,6 @@ architecture struct of core is
 		);
 	end component;
 
-	component multi_plexer2 is
-		port (
-			sel		: in  std_logic;
-			mux_in0	: in  std_logic_vector (31 downto 0);
-			mux_in1	: in  std_logic_vector (31 downto 0);
-			mux_out	: out std_logic_vector (31 downto 0)
-		);
-	end component;
-
-	component multi_plexer4 is
-		port (
-			sel		: in  std_logic_vector (1 downto 0);
-			mux_in0	: in  std_logic_vector (31 downto 0);
-			mux_in1	: in  std_logic_vector (31 downto 0);
-			mux_in2	: in  std_logic_vector (31 downto 0);
-			mux_in3	: in  std_logic_vector (31 downto 0);
-			mux_out	: out std_logic_vector (31 downto 0)
-		);
-	end component;
-
-	component multi_plexer8 is
-		port (
-			sel		: in  std_logic_vector (2 downto 0);
-			mux_in0	: in  std_logic_vector (31 downto 0);
-			mux_in1	: in  std_logic_vector (31 downto 0);
-			mux_in2	: in  std_logic_vector (31 downto 0);
-			mux_in3	: in  std_logic_vector (31 downto 0);
-			mux_in4	: in  std_logic_vector (31 downto 0);
-			mux_in5	: in  std_logic_vector (31 downto 0);
-			mux_in6	: in  std_logic_vector (31 downto 0);
-			mux_in7	: in  std_logic_vector (31 downto 0);
-			mux_out	: out std_logic_vector (31 downto 0)
-		);
-	end component;
-
 	signal pc_in  : std_logic_vector (31 downto 0) := (others => '0');
 	signal pc_out : std_logic_vector (31 downto 0) := (others => '0');
 
@@ -274,7 +239,6 @@ architecture struct of core is
 	signal instruction         : std_logic_vector (31 downto 0) := (others => '0');
 	
 	signal selected_ia  : std_logic_vector (31 downto 0) := (others => '0');
-	signal ia_minus_one : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal gpr_write_enable  : std_logic                      := '0';
 	signal gpr_read_reg_num1 : std_logic_vector (4 downto 0)  := (others => '0');
@@ -500,9 +464,6 @@ begin
 		sender_out  => sender_out
 	);
 
-	RS_TX <= sender_out;
-	sender_in   <= dmem_write_data;
-
 	recv : recver port map (
 		clk          => clk,
 		recver_recv  => recver_recv,
@@ -510,8 +471,6 @@ begin
 		recver_empty => recver_empty,
 		recver_out   => recver_out
 	);
-
-	recver_in <= RS_RX;
 
 	cont : control port map (
 		clk               => clk,
@@ -544,60 +503,34 @@ begin
 
 	-- data path
 
-	mux_alu_src : multi_plexer2 port map (
-		sel		=> alu_src,
-		mux_in0	=> gpr_read_data2,
-		mux_in1	=> ext_out,
-		mux_out	=> alu_in2
-	);
+	alu_in2 <= ext_out when alu_src = '1' else
+	           gpr_read_data2;
 
-	mux_dmem_src : multi_plexer2 port map (
-		sel		=> dmem_src,
-		mux_in0	=> gpr_read_data3,
-		mux_in1	=> fpr_read_data3,
-		mux_out	=> dmem_write_data
-	);
+	dmem_write_data <= fpr_read_data3 when dmem_src = '1' else
+	                   gpr_read_data3;
 
-	mux_data_src : multi_plexer8 port map (
-		sel		=> data_src,
-		mux_in0	=> alu_out,
-		mux_in1	=> dmem_read_data,
-		mux_in2	=> lr_out,
-		mux_in3	=> recver_out,
-		mux_in4	=> fpu_out,
-		mux_in5	=> fadd_out,
-		mux_in6	=> fmul_out,
-		mux_in7	=> finv_out,
-		mux_out	=> selected_data
-	);
+	selected_data <= alu_out        when data_src = "000" else
+		             dmem_read_data when data_src = "001" else
+		             lr_out         when data_src = "010" else
+		             recver_out     when data_src = "011" else
+		             fpu_out        when data_src = "100" else
+		             fadd_out       when data_src = "101" else
+		             fmul_out       when data_src = "110" else
+		             finv_out;
 
-	mux_lr_src : multi_plexer2 port map (
-		sel		=> lr_src,
-		mux_in0	=> pc_out,
-		mux_in1	=> alu_out,
-		mux_out	=> lr_in
-	);
+	lr_in <= alu_out when lr_src = '1' else
+	         pc_out;
 
-	mux_ia_src : multi_plexer4 port map (
-		sel		=> ia_src,
-		mux_in0	=> pc_out,
-		mux_in1	=> lr_out,
-		mux_in2	=> ctr_out,
-		mux_in3	=> ext_out,
-		mux_out	=> selected_ia
-	);
+	selected_ia <= pc_out  when ia_src = "00" else
+	               lr_out  when ia_src = "01" else
+	               ctr_out when ia_src = "10" else
+	               ext_out;
 
-	mux_stall : multi_plexer2 port map (
-		sel		=> stall_src,
-		mux_in0	=> selected_ia,
-		mux_in1	=> ia_minus_one,
-		mux_out	=> instruction_address
-	);
+	instruction_address <= selected_ia - 1 when stall_src = '1' else
+	                       selected_ia;
 
-	pc_in <= instruction_address when (instruction_address = "11111111111111")
-		else instruction_address + 1;
-
-	ia_minus_one <= selected_ia - 1;
+	pc_in <= instruction_address when (instruction_address = "11111111111111") else
+	         instruction_address + 1;
 
 	gpr_read_reg_num1 <= instruction(20 downto 16);
 	gpr_read_reg_num2 <= instruction(15 downto 11);
@@ -632,5 +565,9 @@ begin
 	ctr_in <= alu_out;
 
 	dmem_data_address <= alu_out(19 downto 0);
+
+	sender_in <= dmem_write_data;
+	RS_TX     <= sender_out;
+	recver_in <= RS_RX;
 
 end;

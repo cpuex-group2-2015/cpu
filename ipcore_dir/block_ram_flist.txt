@@ -1,4 +1,5 @@
 # Output products list for <block_ram>
+_xmsgs/pn_parser.xmsgs
 block_ram/blk_mem_gen_v7_3_readme.txt
 block_ram/doc/blk_mem_gen_v7_3_vinfo.html
 block_ram/doc/pg058-blk-mem-gen.pdf

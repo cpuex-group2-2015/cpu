@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity control is
 	port (
 		clk               : in  std_logic;
@@ -11,25 +13,25 @@ entity control is
 		cr                : in  std_logic_vector (3 downto 0);
 		sender_full       : in  std_logic;
 		recver_empty      : in  std_logic;
-		gpr_write_enable  : out std_logic                     := '0';
-		fpr_write_enable  : out std_logic                     := '0';
-		dmem_write_enable : out std_logic                     := '0';
-		cr_g_write_enable : out std_logic                     := '0';
-		cr_f_write_enable : out std_logic                     := '0';
-		lr_write_enable   : out std_logic                     := '0';
-		ctr_write_enable  : out std_logic                     := '0';
-		ext_op            : out std_logic_vector (1 downto 0) := (others => '0');
-		alu_op            : out std_logic_vector (2 downto 0) := (others => '0');
-		alu_src           : out std_logic                     := '0';
-		dmem_src          : out std_logic                     := '0';
-		fpu_op            : out std_logic_vector (1 downto 0) := (others => '0');
-		fadd_op           : out std_logic                     := '0';
-		data_src          : out std_logic_vector (2 downto 0) := (others => '0');
-		lr_src            : out std_logic                     := '0';
-		ia_src            : out std_logic_vector (1 downto 0) := (others => '0');
-		stall_src         : out std_logic                     := '0';
-		sender_send       : out std_logic                     := '0';
-		recver_recv       : out std_logic                     := '0'
+		gpr_write_enable  : out std_logic   := '0';
+		fpr_write_enable  : out std_logic   := '0';
+		dmem_write_enable : out std_logic   := '0';
+		cr_g_write_enable : out std_logic   := '0';
+		cr_f_write_enable : out std_logic   := '0';
+		lr_write_enable   : out std_logic   := '0';
+		ctr_write_enable  : out std_logic   := '0';
+		ext_op            : out ext_op_t    := ext_op_unsigned;
+		alu_op            : out alu_op_t    := alu_op_add;
+		fpu_op            : out fpu_op_t    := fpu_op_bypass;
+		fadd_op           : out fadd_op_t   := fadd_op_add;
+		alu_src           : out alu_src_t   := alu_src_gpr;
+		dmem_src          : out dmem_src_t  := dmem_src_gpr;
+		data_src          : out data_src_t  := data_src_alu;
+		lr_src            : out lr_src_t    := lr_src_pc;
+		ia_src            : out ia_src_t    := ia_src_pc;
+		stall_src         : out stall_src_t := stall_src_go;
+		sender_send       : out std_logic   := '0';
+		recver_recv       : out std_logic   := '0'
 	);
 end control;
 
@@ -101,23 +103,23 @@ begin
 		when   (opcode = "011111" and sub_opcode = "0111010100")	-- mtctr
 		else '0';
 
-	ext_op <= "00"
+	ext_op <= ext_op_unsigned
 			when   (opcode = "011100"	-- andi
 				or  opcode = "011001"	-- ori
 				or  opcode = "010010"	-- b, bl
 				or  opcode = "010000")	-- bc, bcl
-		else "01"
+		else ext_op_signed
 			when   (opcode = "100000"	-- ld
 				or  opcode = "110010"	-- ldf
 				or  opcode = "100100"	-- st
 				or  opcode = "110100"	-- stf
 				or  opcode = "001110"	-- addi
 				or  opcode = "001011")	-- cmpi
-		else "11"
+		else ext_op_signed_shifted
 			when   (opcode = "001111")	-- addis
-		else "--";
+		else ext_op_unsigned;
 
-	alu_op <= "000"
+	alu_op <= alu_op_add
 			when   (opcode = "100000"					-- ld
 				or  opcode = "110010"					-- ldf
 				or  opcode = "100100"					-- st
@@ -130,41 +132,31 @@ begin
 					or   sub_opcode = "0010010111"		-- stx
 					or   sub_opcode = "1010010111"		-- stfx
 					or   sub_opcode = "0100001010")))	-- add
-		else "001"
+		else alu_op_neg
 			when   (opcode = "011111"
 					and  sub_opcode = "0001101000")		-- neg
 
-		else "010"
+		else alu_op_and
 			when   (opcode = "011100"					-- andi
 				or (opcode = "011111"
 					and sub_opcode = "0000011100"))		-- and
-		else "011"
+		else alu_op_or
 			when   (opcode = "011001"					-- ori
 				or  opcode = "010101"					-- mfgtf
 				or (opcode = "011111"
 					and (sub_opcode = "0110111100"		-- or
 					or   sub_opcode = "0111010011"		-- mtlr
 					or   sub_opcode = "0111010100")))	-- mtctr
-		else "100"
+		else alu_op_sl
 			when   (opcode = "011111" and sub_opcode = "0000011000")				-- sl
-		else "101"
+		else alu_op_sr
 			when   (opcode = "011111" and sub_opcode = "1000011000")				-- sr
-		else "110"
+		else alu_op_cmp
 			when   (opcode = "001011"					-- cmpi
 				or  opcode = "011110")					-- cmp
-		else "---";
+		else alu_op_add;
 
-	alu_src <= '1'
-			when   (opcode = "100000"					-- ld
-				or  opcode = "110010"					-- ldf
-				or  opcode = "100100"					-- st
-				or  opcode = "110100"					-- stf
-				or  opcode = "001110"					-- addi
-				or  opcode = "001111"					-- addis
-				or  opcode = "011100"					-- andi
-				or  opcode = "011001"					-- ori
-				or  opcode = "001011")					-- cmpi
-		else '0'
+	alu_src <= alu_src_gpr
 			when   (opcode = "011110"					-- cmp
 				or  opcode = "010101"					-- mfgtf
 				or (opcode = "011111"
@@ -179,41 +171,49 @@ begin
 					or   sub_opcode = "0111010100"		-- mtctr
 					or   sub_opcode = "0000011000"		-- sl
 					or   sub_opcode = "1000011000")))	-- sr
-		else '-';
+		else alu_src_ext
+			when   (opcode = "100000"					-- ld
+				or  opcode = "110010"					-- ldf
+				or  opcode = "100100"					-- st
+				or  opcode = "110100"					-- stf
+				or  opcode = "001110"					-- addi
+				or  opcode = "001111"					-- addis
+				or  opcode = "011100"					-- andi
+				or  opcode = "011001"					-- ori
+				or  opcode = "001011");					-- cmpi
 
-	dmem_src <= '0'
+	dmem_src <= dmem_src_gpr
 			when   (opcode = "000001"					-- send
 				or  opcode = "100100"					-- st
 				or (opcode = "011111"
 					and sub_opcode = "0010010111"))		-- stx
-		else '1'
+		else dmem_src_fpr
 			when   (opcode = "110100"					-- stf
 				or (opcode = "011111"
-					and sub_opcode = "1010010111"))		-- stfx
-		else '-';
+					and sub_opcode = "1010010111"));	-- stfx
 
-	fpu_op <= "00"
+	fpu_op <= fpu_op_bypass
 			when   (opcode = "010110"					-- mfftg
 				or (opcode = "111111"
 					and  sub_opcode = "0001001000"))	-- fmr
-		else "01"
+		else fpu_op_neg
 			when   (opcode = "111111"
 					and  sub_opcode = "0000101000")		-- fneg
-		else "10"
+		else fpu_op_abs
 			when   (opcode = "111111"
 					and  sub_opcode = "0100001000")		-- fabs
-		else "11"
+		else fpu_op_cmp
 			when   (opcode = "111111"
 					and  sub_opcode = "0000000000")		-- fcmp
-		else "--";
+		else fpu_op_bypass;
 
-	fadd_op <= '0'
+	fadd_op <= fadd_op_add
 			when (opcode = "111111" and sub_opcode = "0000010101")	-- fadd
-		else '1'
+		else fadd_op_sub
 			when (opcode = "111111" and sub_opcode = "0000010100")	-- fsub
-		else '-';
+		else fadd_op_add;
 
-	data_src <= "000"
+	data_src <= data_src_alu
 			when   (opcode = "001110"					-- addi
 				or  opcode = "001111"					-- addis
 				or  opcode = "011100"					-- andi
@@ -226,53 +226,51 @@ begin
 					or   sub_opcode = "0110111100"		-- or
 					or   sub_opcode = "0000011000"		-- sl
 					or   sub_opcode = "1000011000")))	-- sr
-		else "001"
+		else data_src_dmem
 			when   (opcode = "100000"					-- ld
 				or  opcode = "110010"					-- ldf
 				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
 					or   sub_opcode = "1001010111")))	-- ldfx
-		else "010"
+		else data_src_lr
 			when   (opcode = "011111"
 					and  sub_opcode = "0101010011")		-- mflr
-		else "011"
+		else data_src_recv
 			when   (opcode = "000010")					-- recv
-		else "100"
+		else data_src_fpu
 			when   (opcode = "010110"					-- mfftg
 				or (opcode = "111111"
 					and (sub_opcode = "0001001000"		-- fmr
 					or   sub_opcode = "0000101000"		-- fneg
 					or   sub_opcode = "0100001000")))	-- fabs
-		else "101"
+		else data_src_fadd
 			when   (opcode = "111111"
 					and (sub_opcode = "0000010101"		-- fadd
 					or   sub_opcode = "0000010100"))	-- fsub
-		else "110"
+		else data_src_fmul
 			when   (opcode = "111111"
 					and  sub_opcode = "0000011001")		-- fmul
-		else "111"
+		else data_src_finv
 			when   (opcode = "111111"
-					and  sub_opcode = "0000010010")		-- finv
-		else "---";
+					and  sub_opcode = "0000010010");	-- finv
 
-	lr_src <= '1'
-			when   (opcode = "011111" and sub_opcode = "0111010011")	-- mtlr
-		else '0'
+	lr_src <= lr_src_pc
 			when  ((opcode = "010010" and branch_op(3) = '1')			-- bl
 				or (opcode = "010000" and branch_op(3) = '1')			-- bcl
 				or (opcode = "010100" and branch_op(3) = '1'))			-- bctrl
-		else '-';
+		else lr_src_alu
+			when   (opcode = "011111" and sub_opcode = "0111010011");	-- mtlr
 
-	ia_src <= "01"
+	ia_src <= ia_src_lr
 			when   (opcode = "010011")																-- blr
-		else "10"
+		else ia_src_ctr
 			when   (opcode = "010100")																-- bctr, bctrl
-		else "11"
+		else ia_src_ext
 			when   (opcode = "010010"																-- b, bl
 				or (opcode = "010000" and cr(conv_integer(branch_op(1 downto 0))) = branch_op(2)))	-- bc, bcl
-		else "00";
+		else ia_src_pc;
 
-	stall_src <= '1'
+	stall_src <= stall_src_stall
 		when (opcode = "000001" and sender_full = '1')	-- send
 		or   (opcode = "000010" and recver_empty = '1')	-- recv
 		or (wait_count /= "100"	-- 5clk instructions
@@ -287,7 +285,7 @@ begin
 			or  (opcode = "011111"
 				and (sub_opcode = "0000010111"		-- ldx
 				or   sub_opcode = "1001010111"))))	-- ldfx
-		else '0';
+		else stall_src_go;
 
 	process (clk, opcode, sub_opcode, branch_op, cr)
 	begin

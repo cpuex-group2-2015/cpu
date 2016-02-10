@@ -2,9 +2,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity floating_point_unit is
 	port (
-		fpu_op   : in  std_logic_vector (1 downto 0);
+		fpu_op   : in  fpu_op_t;
 		fpu_in1  : in  std_logic_vector (31 downto 0);
 		fpu_in2  : in  std_logic_vector (31 downto 0);
 		fpu_cond : out std_logic_vector (3 downto 0);
@@ -12,28 +14,22 @@ entity floating_point_unit is
 	);
 end floating_point_unit;
 
--- fpu_op
--- 00 : bypass
--- 01 : neg
--- 10 : abs
--- 11 : cmp
-
 architecture struct of floating_point_unit is
 begin
 
 	process(fpu_op, fpu_in1, fpu_in2)
 	begin
 		case fpu_op is
-		when "00" =>						-- bypass
+		when fpu_op_bypass =>
 			fpu_out  <= fpu_in2;
 			fpu_cond <= "0000";
-		when "01" =>						-- neg
+		when fpu_op_neg =>
 			fpu_out  <= (not fpu_in2(31)) & fpu_in2(30 downto 0);
 			fpu_cond <= "0000";
-		when "10" =>						-- abs
+		when fpu_op_abs =>
 			fpu_out <= '0' & fpu_in2(30 downto 0);
 			fpu_cond <= "0000";
-		when "11" =>						-- cmp
+		when fpu_op_cmp =>
 			fpu_out <= fpu_in2;
 
 			-- NaN

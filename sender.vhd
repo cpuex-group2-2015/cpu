@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity sender is
 	port (
 		clk         : in  std_logic;
@@ -36,19 +38,11 @@ architecture struct of sender is
 	type state_t is (ready, sending_start_bit, sending_data, sending_stop_bit);
 	signal state : state_t := ready;
 
-	--constant wtime : std_logic_vector (15 downto 0) := x"0360";		-- 115200, 99MHz
-	constant wtime : std_logic_vector (15 downto 0) := x"02FF";		-- 115200, 88MHz
-	--constant wtime : std_logic_vector (15 downto 0) := x"02AF";		-- 115200, 77MHz
-	--constant wtime : std_logic_vector (15 downto 0) := x"0242";		-- 115200, 66MHz
-	--constant wtime : std_logic_vector (15 downto 0) := x"1B16";		-- 9600, 66MHz
-
 	signal count : std_logic_vector (15 downto 0) := (others=> '0');
 
-	signal bit_count  : integer := 0;
+	signal bit_count : integer := 0;
 
 	signal send_buf : std_logic_vector (7 downto 0) := (others => '0');
-
-	signal is_one : std_logic := '0';
 
 begin
 
@@ -63,10 +57,8 @@ begin
 	);
 
 	sender_full <= fifo_full;
-	fifo_wr_en <= sender_send;
-	fifo_din <= sender_in(7 downto 0);
-
-	is_one <= '1' when (sender_in = x"31" and sender_send = '1') else '0';
+	fifo_wr_en  <= sender_send;
+	fifo_din    <= sender_in(7 downto 0);
 
 	-- send
 	process (clk)
@@ -88,7 +80,7 @@ begin
 				end if;
 			when sending_start_bit =>
 				sender_out <= '0';
-				if (count = wtime) then
+				if (count = WTIME_SEND) then
 					state <= sending_data;
 					count <= x"0000";
 				else
@@ -96,7 +88,7 @@ begin
 				end if;
 			when sending_data =>
 				sender_out <= send_buf(bit_count);
-				if (count = wtime) then
+				if (count = WTIME_SEND) then
 					if (bit_count = 7) then
 						state <= sending_stop_bit;
 						bit_count <= 0;
@@ -109,7 +101,7 @@ begin
 				end if;
 			when sending_stop_bit =>
 				sender_out <= '1';
-				if (count = wtime) then
+				if (count = WTIME_SEND) then
 					state <= ready;
 					count <= x"0000";
 				else
@@ -117,7 +109,7 @@ begin
 				end if;
 			when others =>
 				sender_out <= '1';
-				state <= ready;
+				state      <= ready;
 			end case;
 
 			fifo_rd_en <= fifo_rd_en_tmp;

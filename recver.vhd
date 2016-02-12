@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity recver is
 	port (
 		clk          : in  std_logic;
@@ -36,20 +38,9 @@ architecture struct of recver is
 	type state_t is (ready, recving_start_bit, recving_data, recving_stop_bit);
 	signal state : state_t := ready;
 
-	--constant wtime2 : std_logic_vector (15 downto 0) := x"01A8";		-- 115200, 99MHz
-	--constant wtime  : std_logic_vector (15 downto 0) := x"0350";		-- 115200, 99MHz
-	constant wtime2 : std_logic_vector (15 downto 0) := x"0178";		-- 115200, 88MHz
-	constant wtime  : std_logic_vector (15 downto 0) := x"02F0";		-- 115200, 88MHz
-	--constant wtime2 : std_logic_vector (15 downto 0) := x"0148";		-- 115200, 77MHz
-	--constant wtime  : std_logic_vector (15 downto 0) := x"0290";		-- 115200, 77MHz
-	--constant wtime2 : std_logic_vector (15 downto 0) := x"0121";		-- 115200, 66MHz
-	--constant wtime  : std_logic_vector (15 downto 0) := x"0242";		-- 115200, 66MHz
-	--constant wtime2 : std_logic_vector (15 downto 0) := x"0D8B";		-- 9600, 66MHz
-	--constant wtime  : std_logic_vector (15 downto 0) := x"1B16";		-- 9600, 66MHz
+	signal count : std_logic_vector (15 downto 0) := (others=> '0');
 
-	signal count  : std_logic_vector (15 downto 0) := (others=> '0');
-
-	signal bit_count  : integer := 0;
+	signal bit_count : integer := 0;
 
 	signal recv_buf : std_logic_vector (7 downto 0) := (others => '0');
 
@@ -89,14 +80,14 @@ begin
 					state          <= recving_start_bit;
 				end if;
 			when recving_start_bit =>
-				if (count = wtime2) then
+				if (count = WTIME_RECV_HALF) then
 					state <= recving_data;
 					count <= x"0000";
 				else
 					count <= count + 1;
 				end if;
 			when recving_data =>
-				if (count = wtime) then
+				if (count = WTIME_RECV) then
 					recv_buf(bit_count) <= recver_in;
 					if (bit_count = 7) then
 						state <= recving_stop_bit;
@@ -109,7 +100,7 @@ begin
 					count <= count + 1;
 				end if;
 			when recving_stop_bit =>
-				if (count = wtime) then
+				if (count = WTIME_RECV) then
 					state <= ready;
 					fifo_wr_en_tmp := '1';
 					count <= x"0000";

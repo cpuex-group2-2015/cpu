@@ -93,4 +93,29 @@ package types is
     constant IA_SRC_CTR : std_logic_vector (1 downto 0) := "10";
     constant IA_SRC_EXT : std_logic_vector (1 downto 0) := "11";
 
+    -- -- 9600, 66MHz
+    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"1B16";
+    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"1B16";
+    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0D8B";
+    --
+    -- -- 115200, 66MHz
+    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"0242";
+    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0242";
+    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0121";
+    --
+    -- -- 115200, 77MHz
+    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"02AF";
+    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0290";
+    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0148";
+
+    -- 115200, 88MHz
+    constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"02FF";
+    constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"02F0";
+    constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0178";
+
+    -- -- 115200, 99MHz
+    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"0360";
+    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0350";
+    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"01A8";
+
 end package;

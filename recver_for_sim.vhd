@@ -4,6 +4,8 @@ use ieee.std_logic_unsigned.all;
 use IEEE.std_logic_textio.all;
 use STD.TEXTIO.all;
 
+use work.types.all;
+
 entity recver_for_sim is
 	port (
 		clk          : in  std_logic;
@@ -13,18 +15,14 @@ end recver_for_sim;
 
 architecture struct of recver_for_sim is
 
-	file text_out : text is out "/home/ykon/Desktop/cpuex/1stISA_Powerless_PC/out.txt";
+	file text_out : text is out "out.txt";
 
 	type state_t is (ready, recving_start_bit, recving_data, recving_stop_bit);
 	signal state : state_t := ready;
 
-	constant wtime2 : std_logic_vector (15 downto 0) := x"0121";		-- 115200
-	constant wtime  : std_logic_vector (15 downto 0) := x"0242";		-- 115200
-	--constant wtime2 : std_logic_vector (15 downto 0) := x"0D8B";		-- 9600
-	--constant wtime  : std_logic_vector (15 downto 0) := x"1B16";		-- 9600
-	signal   count  : std_logic_vector (15 downto 0) := (others=> '0');
+	signal count : std_logic_vector (15 downto 0) := (others=> '0');
 
-	signal bit_count  : integer := 0;
+	signal bit_count : integer := 0;
 
 	signal recv_buf : std_logic_vector (7 downto 0) := (others => '0');
 
@@ -41,14 +39,14 @@ begin
 					state          <= recving_start_bit;
 				end if;
 			when recving_start_bit =>
-				if (count = wtime2) then
+				if (count = WTIME_RECV_HALF) then
 					state <= recving_data;
 					count <= x"0000";
 				else
 					count <= count + 1;
 				end if;
 			when recving_data =>
-				if (count = wtime) then
+				if (count = WTIME_RECV) then
 					recv_buf(bit_count) <= recver_in;
 					if (bit_count = 7) then
 						state <= recving_stop_bit;
@@ -61,7 +59,7 @@ begin
 					count <= count + 1;
 				end if;
 			when recving_stop_bit =>
-				if (count = wtime) then
+				if (count = WTIME_RECV) then
 					state <= ready;
 					write(line_out, recv_buf, LEFT, 8);
 					writeline(text_out, line_out);

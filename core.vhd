@@ -74,6 +74,17 @@ architecture struct of core is
 		);
 	end component;
 
+	--component cache_memory is
+	--	port (
+	--		clk                : in  std_logic;
+	--		cache_write_enable : in  std_logic;
+	--		cache_address      : in  std_logic_vector (19 downto 0);
+	--		cache_data_in      : in  std_logic_vector (31 downto 0);
+	--		cache_data_out     : out std_logic_vector (31 downto 0);
+	--		cache_hit_miss     : out std_logic
+	--	);
+	--end component;
+
 	component data_memory is
 		port (
 			clk               : in  std_logic;
@@ -205,32 +216,35 @@ architecture struct of core is
 
 	component control is
 		port (
-			clk               : in  std_logic;
-			opcode            : in  std_logic_vector (5 downto 0);
-			sub_opcode        : in  std_logic_vector (9 downto 0);
-			branch_op         : in  std_logic_vector (3 downto 0);
-			cr                : in  std_logic_vector (3 downto 0);
-			sender_full       : in  std_logic;
-			recver_empty      : in  std_logic;
-			gpr_write_enable  : out std_logic;
-			fpr_write_enable  : out std_logic;
-			dmem_write_enable : out std_logic;
-			cr_g_write_enable : out std_logic;
-			cr_f_write_enable : out std_logic;
-			lr_write_enable   : out std_logic;
-			ctr_write_enable  : out std_logic;
-			ext_op            : out ext_op_t;
-			alu_op            : out alu_op_t;
-			fpu_op            : out fpu_op_t;
-			fadd_op           : out fadd_op_t;
-			alu_src           : out alu_src_t;
-			dmem_src          : out dmem_src_t;
-			data_src          : out data_src_t;
-			lr_src            : out lr_src_t;
-			ia_src            : out ia_src_t;
-			stall_src         : out stall_src_t;
-			sender_send       : out std_logic;
-			recver_recv       : out std_logic
+			clk                : in  std_logic;
+			opcode             : in  std_logic_vector (5 downto 0);
+			sub_opcode         : in  std_logic_vector (9 downto 0);
+			branch_op          : in  std_logic_vector (3 downto 0);
+			cr                 : in  std_logic_vector (3 downto 0);
+			--cache_hit_miss     : in  std_logic;
+			sender_full        : in  std_logic;
+			recver_empty       : in  std_logic;
+			gpr_write_enable   : out std_logic;
+			fpr_write_enable   : out std_logic;
+			--cache_write_enable : out std_logic;
+			dmem_write_enable  : out std_logic;
+			cr_g_write_enable  : out std_logic;
+			cr_f_write_enable  : out std_logic;
+			lr_write_enable    : out std_logic;
+			ctr_write_enable   : out std_logic;
+			ext_op             : out ext_op_t;
+			alu_op             : out alu_op_t;
+			fpu_op             : out fpu_op_t;
+			fadd_op            : out fadd_op_t;
+			alu_src            : out alu_src_t;
+			--cache_src          : out cache_src_t;
+			dmem_src           : out dmem_src_t;
+			data_src           : out data_src_t;
+			lr_src             : out lr_src_t;
+			ia_src             : out ia_src_t;
+			stall_src          : out stall_src_t;
+			sender_send        : out std_logic;
+			recver_recv        : out std_logic
 		);
 	end component;
 
@@ -261,6 +275,12 @@ architecture struct of core is
 	signal fpr_read_data1    : std_logic_vector (31 downto 0) := (others => '0');
 	signal fpr_read_data2    : std_logic_vector (31 downto 0) := (others => '0');
 	signal fpr_read_data3    : std_logic_vector (31 downto 0) := (others => '0');
+
+	--signal cache_write_enable : std_logic                      := '0';
+	--signal cache_address      : std_logic_vector (19 downto 0) := (others => '0');
+	--signal cache_data_in      : std_logic_vector (31 downto 0) := (others => '0');
+	--signal cache_data_out     : std_logic_vector (31 downto 0) := (others => '0');
+	--signal cache_hit_miss     : std_logic                      := '0';
 
 	signal dmem_write_enable : std_logic                      := '0';
 	signal dmem_address      : std_logic_vector (19 downto 0) := (others => '0');
@@ -319,12 +339,13 @@ architecture struct of core is
 	signal recver_empty : std_logic                      := '0';
 	signal recver_out   : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal alu_src      : alu_src_t   := alu_src_gpr;
-	signal dmem_src     : dmem_src_t  := dmem_src_gpr;
-	signal data_src     : data_src_t  := data_src_alu;
-	signal lr_src       : lr_src_t    := lr_src_pc;
-	signal ia_src       : ia_src_t    := ia_src_pc;
-	signal stall_src    : stall_src_t := stall_src_go;
+	signal alu_src   : alu_src_t   := alu_src_gpr;
+	--signal cache_src : cache_src_t := cache_src_regs;
+	signal dmem_src  : dmem_src_t  := dmem_src_gpr;
+	signal data_src  : data_src_t  := data_src_alu;
+	signal lr_src    : lr_src_t    := lr_src_pc;
+	signal ia_src    : ia_src_t    := ia_src_pc;
+	signal stall_src : stall_src_t := stall_src_go;
 
 	signal selected_data : std_logic_vector (31 downto 0) := (others => '0');
 
@@ -368,6 +389,15 @@ begin
 		fpr_read_data2    => fpr_read_data2,
 		fpr_read_data3    => fpr_read_data3
 	);
+
+	--cache : cache_memory port map (
+	--	clk                => clk,
+	--	cache_write_enable => cache_write_enable,
+	--	cache_address      => cache_address,
+	--	cache_data_in      => cache_data_in,
+	--	cache_data_out     => cache_data_out,
+	--	cache_hit_miss     => cache_hit_miss
+	--);
 
 	dmem : data_memory port map (
 		clk               => clk,
@@ -475,32 +505,35 @@ begin
 	);
 
 	cont : control port map (
-		clk               => clk,
-		opcode            => instruction(31 downto 26),
-		sub_opcode        => instruction(10 downto 1),
-		branch_op         => instruction(25 downto 22),
-		cr                => cr_out,
-		sender_full       => sender_full,
-		recver_empty      => recver_empty,
-		gpr_write_enable  => gpr_write_enable,
-		fpr_write_enable  => fpr_write_enable,
-		dmem_write_enable => dmem_write_enable,
-		cr_g_write_enable => cr_g_write_enable,
-		cr_f_write_enable => cr_f_write_enable,
-		lr_write_enable   => lr_write_enable,
-		ctr_write_enable  => ctr_write_enable,
-		ext_op            => ext_op,
-		alu_op            => alu_op,
-		fpu_op            => fpu_op,
-		fadd_op           => fadd_op,
-		alu_src           => alu_src,
-		dmem_src          => dmem_src,
-		data_src          => data_src,
-		lr_src            => lr_src,
-		ia_src            => ia_src,
-		stall_src         => stall_src,
-		sender_send       => sender_send,
-		recver_recv       => recver_recv
+		clk                => clk,
+		opcode             => instruction(31 downto 26),
+		sub_opcode         => instruction(10 downto 1),
+		branch_op          => instruction(25 downto 22),
+		cr                 => cr_out,
+		--cache_hit_miss     => cache_hit_miss,
+		sender_full        => sender_full,
+		recver_empty       => recver_empty,
+		gpr_write_enable   => gpr_write_enable,
+		fpr_write_enable   => fpr_write_enable,
+		--cache_write_enable => cache_write_enable,
+		dmem_write_enable  => dmem_write_enable,
+		cr_g_write_enable  => cr_g_write_enable,
+		cr_f_write_enable  => cr_f_write_enable,
+		lr_write_enable    => lr_write_enable,
+		ctr_write_enable   => ctr_write_enable,
+		ext_op             => ext_op,
+		alu_op             => alu_op,
+		fpu_op             => fpu_op,
+		fadd_op            => fadd_op,
+		alu_src            => alu_src,
+		--cache_src          => cache_src,
+		dmem_src           => dmem_src,
+		data_src           => data_src,
+		lr_src             => lr_src,
+		ia_src             => ia_src,
+		stall_src          => stall_src,
+		sender_send        => sender_send,
+		recver_recv        => recver_recv
 	);
 
 	-- data path
@@ -511,14 +544,18 @@ begin
 	dmem_data_in <= gpr_read_data3 when dmem_src = dmem_src_gpr else
 	                fpr_read_data3 when dmem_src = dmem_src_fpr;
 
-	selected_data <= alu_out       when data_src = data_src_alu  else
-		             dmem_data_out when data_src = data_src_dmem else
-		             lr_out        when data_src = data_src_lr   else
-		             recver_out    when data_src = data_src_recv else
-		             fpu_out       when data_src = data_src_fpu  else
-		             fadd_out      when data_src = data_src_fadd else
-		             fmul_out      when data_src = data_src_fmul else
-		             finv_out      when data_src = data_src_finv;
+	--cache_data_in <= dmem_data_in  when cache_src = cache_src_regs else
+	--                 dmem_data_out when cache_src = cache_src_dmem;
+
+	selected_data <= alu_out        when data_src = data_src_alu   else
+		             --cache_data_out when data_src = data_src_cache else
+		             dmem_data_out  when data_src = data_src_dmem  else
+		             lr_out         when data_src = data_src_lr    else
+		             recver_out     when data_src = data_src_recv  else
+		             fpu_out        when data_src = data_src_fpu   else
+		             fadd_out       when data_src = data_src_fadd  else
+		             fmul_out       when data_src = data_src_fmul  else
+		             finv_out       when data_src = data_src_finv;
 
 	lr_in <= pc_out  when lr_src = lr_src_pc else
 	         alu_out when lr_src = lr_src_alu;
@@ -566,6 +603,7 @@ begin
 
 	ctr_in <= alu_out;
 
+	--cache_address <= alu_out(19 downto 0);
 	dmem_address <= alu_out(19 downto 0);
 
 	sender_in <= dmem_data_in;

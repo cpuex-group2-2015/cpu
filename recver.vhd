@@ -38,12 +38,12 @@ architecture struct of recver is
 
 	--constant wtime2 : std_logic_vector (15 downto 0) := x"01A8";		-- 115200, 99MHz
 	--constant wtime  : std_logic_vector (15 downto 0) := x"0350";		-- 115200, 99MHz
-	constant wtime2 : std_logic_vector (15 downto 0) := x"0178";		-- 115200, 88MHz
-	constant wtime  : std_logic_vector (15 downto 0) := x"02F0";		-- 115200, 88MHz
+	--constant wtime2 : std_logic_vector (15 downto 0) := x"0178";		-- 115200, 88MHz
+	--constant wtime  : std_logic_vector (15 downto 0) := x"02F0";		-- 115200, 88MHz
 	--constant wtime2 : std_logic_vector (15 downto 0) := x"0148";		-- 115200, 77MHz
 	--constant wtime  : std_logic_vector (15 downto 0) := x"0290";		-- 115200, 77MHz
-	--constant wtime2 : std_logic_vector (15 downto 0) := x"0121";		-- 115200, 66MHz
-	--constant wtime  : std_logic_vector (15 downto 0) := x"0242";		-- 115200, 66MHz
+	constant wtime2 : std_logic_vector (15 downto 0) := x"0121";		-- 115200, 66MHz
+	constant wtime  : std_logic_vector (15 downto 0) := x"0242";		-- 115200, 66MHz
 	--constant wtime2 : std_logic_vector (15 downto 0) := x"0D8B";		-- 9600, 66MHz
 	--constant wtime  : std_logic_vector (15 downto 0) := x"1B16";		-- 9600, 66MHz
 

@@ -51,36 +51,36 @@ architecture struct of top is
 		);
 	end component;
 
-	component cpu_clk is
-		port (
-			CLKIN_IN        : in  std_logic;
-			RST_IN          : in  std_logic;
-			CLKFX_OUT       : out std_logic;
-			CLKIN_IBUFG_OUT : out std_logic;
-			CLK0_OUT        : out std_logic;
-			LOCKED_OUT      : out std_logic
-		);
-	end component;
+	--component cpu_clk is
+	--	port (
+	--		CLKIN_IN        : in  std_logic;
+	--		RST_IN          : in  std_logic;
+	--		CLKFX_OUT       : out std_logic;
+	--		CLKIN_IBUFG_OUT : out std_logic;
+	--		CLK0_OUT        : out std_logic;
+	--		LOCKED_OUT      : out std_logic
+	--	);
+	--end component;
 
 	signal clk, iclk: std_logic;
-	signal rst : std_logic := '0';
+	--signal rst : std_logic := '0';
 
 begin
-	--ib: IBUFG port map (
-	--	i=>MCLK1,
-	--	o=>iclk
-	--);
-
-	--bg: BUFG port map (
-	--	i=>iclk,
-	--	o=>clk
-	--);
-
-	cc : cpu_clk port map (
-		CLKIN_IN  => MCLK1,
-		RST_IN    => rst,
-		CLKFX_OUT => clk
+	ib: IBUFG port map (
+		i=>MCLK1,
+		o=>iclk
 	);
+
+	bg: BUFG port map (
+		i=>iclk,
+		o=>clk
+	);
+
+	--cc : cpu_clk port map (
+	--	CLKIN_IN  => MCLK1,
+	--	RST_IN    => rst,
+	--	CLKFX_OUT => clk
+	--);
 
 	cpu : core port map (
 		clk    => clk,

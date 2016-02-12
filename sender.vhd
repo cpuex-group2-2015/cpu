@@ -37,9 +37,9 @@ architecture struct of sender is
 	signal state : state_t := ready;
 
 	--constant wtime : std_logic_vector (15 downto 0) := x"0360";		-- 115200, 99MHz
-	--constant wtime : std_logic_vector (15 downto 0) := x"02FF";		-- 115200, 88MHz
+	constant wtime : std_logic_vector (15 downto 0) := x"02FF";		-- 115200, 88MHz
 	--constant wtime : std_logic_vector (15 downto 0) := x"02AF";		-- 115200, 77MHz
-	constant wtime : std_logic_vector (15 downto 0) := x"0242";		-- 115200, 66MHz
+	--constant wtime : std_logic_vector (15 downto 0) := x"0242";		-- 115200, 66MHz
 	--constant wtime : std_logic_vector (15 downto 0) := x"1B16";		-- 9600, 66MHz
 
 	signal count : std_logic_vector (15 downto 0) := (others=> '0');

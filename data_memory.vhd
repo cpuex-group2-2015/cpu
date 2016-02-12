@@ -6,9 +6,9 @@ entity data_memory is
 	port (
 		clk               : in  std_logic;
 		dmem_write_enable : in  std_logic;
-		dmem_address      : in  std_logic_vector (19 downto 0);
-		dmem_data_in      : in  std_logic_vector (31 downto 0);
-		dmem_data_out     : out std_logic_vector (31 downto 0);
+		dmem_data_address : in  std_logic_vector (19 downto 0);
+		dmem_write_data   : in  std_logic_vector (31 downto 0);
+		dmem_read_data    : out std_logic_vector (31 downto 0);
 
 		ZD     : inout std_logic_vector (31 downto 0) := (others => 'Z');	-- データ線
 		ZA     : out   std_logic_vector (19 downto 0);	-- アドレス 
@@ -49,11 +49,11 @@ begin
 	XZBE <= "0000";
 	ZCLKMA(0) <= clk;
 	ZCLKMA(1) <= clk;
-	ZA <= dmem_address;
+	ZA <= dmem_data_address;
 
-	dmem_data_out <= ZD;	-- とりあえず常に出しておく
+	dmem_read_data <= ZD;	-- とりあえず常に出しておく
 
-	process (clk, dmem_write_enable, dmem_address, dmem_data_in, ZD)
+	process (clk, dmem_write_enable, dmem_data_address, dmem_write_data, ZD)
 	begin
 		if (rising_edge(clk)) then
 			if (state = '0') then
@@ -64,7 +64,7 @@ begin
 
 			-- 更新
 			state <= dmem_write_enable;
-			data  <= dmem_data_in;
+			data  <= dmem_write_data;
 		end if;
 	end process;
 

@@ -10,8 +10,6 @@ package types is
 
 	type alu_src_t   is (alu_src_gpr, alu_src_ext);
 	type dmem_src_t  is (dmem_src_gpr, dmem_src_fpr);
-	--type cache_src_t is (cache_src_regs, cache_src_dmem);
-	--type data_src_t  is (data_src_alu, data_src_cache, data_src_dmem, data_src_lr, data_src_recv, data_src_fpu, data_src_fadd, data_src_fmul, data_src_finv);
 	type data_src_t  is (data_src_alu, data_src_dmem, data_src_lr, data_src_recv, data_src_fpu, data_src_fadd, data_src_fmul, data_src_finv);
 	type lr_src_t    is (lr_src_pc, lr_src_alu);
 	type ia_src_t    is (ia_src_pc, ia_src_lr, ia_src_ctr, ia_src_ext);

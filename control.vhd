@@ -6,35 +6,32 @@ use work.types.all;
 
 entity control is
 	port (
-		clk                : in  std_logic;
-		opcode             : in  std_logic_vector (5 downto 0);
-		sub_opcode         : in  std_logic_vector (9 downto 0);
-		branch_op          : in  std_logic_vector (3 downto 0);
-		cr                 : in  std_logic_vector (3 downto 0);
-		--cache_hit_miss     : in  std_logic;
-		sender_full        : in  std_logic;
-		recver_empty       : in  std_logic;
-		gpr_write_enable   : out std_logic   := '0';
-		fpr_write_enable   : out std_logic   := '0';
-		--cache_write_enable : out std_logic   := '0';
-		dmem_write_enable  : out std_logic   := '0';
-		cr_g_write_enable  : out std_logic   := '0';
-		cr_f_write_enable  : out std_logic   := '0';
-		lr_write_enable    : out std_logic   := '0';
-		ctr_write_enable   : out std_logic   := '0';
-		ext_op             : out ext_op_t    := ext_op_unsigned;
-		alu_op             : out alu_op_t    := alu_op_add;
-		fpu_op             : out fpu_op_t    := fpu_op_bypass;
-		fadd_op            : out fadd_op_t   := fadd_op_add;
-		alu_src            : out alu_src_t   := alu_src_gpr;
-		--cache_src          : out cache_src_t := cache_src_regs;
-		dmem_src           : out dmem_src_t  := dmem_src_gpr;
-		data_src           : out data_src_t  := data_src_alu;
-		lr_src             : out lr_src_t    := lr_src_pc;
-		ia_src             : out ia_src_t    := ia_src_pc;
-		stall_src          : out stall_src_t := stall_src_go;
-		sender_send        : out std_logic   := '0';
-		recver_recv        : out std_logic   := '0'
+		clk               : in  std_logic;
+		opcode            : in  std_logic_vector (5 downto 0);
+		sub_opcode        : in  std_logic_vector (9 downto 0);
+		branch_op         : in  std_logic_vector (3 downto 0);
+		cr                : in  std_logic_vector (3 downto 0);
+		sender_full       : in  std_logic;
+		recver_empty      : in  std_logic;
+		gpr_write_enable  : out std_logic   := '0';
+		fpr_write_enable  : out std_logic   := '0';
+		dmem_write_enable : out std_logic   := '0';
+		cr_g_write_enable : out std_logic   := '0';
+		cr_f_write_enable : out std_logic   := '0';
+		lr_write_enable   : out std_logic   := '0';
+		ctr_write_enable  : out std_logic   := '0';
+		ext_op            : out ext_op_t    := ext_op_unsigned;
+		alu_op            : out alu_op_t    := alu_op_add;
+		fpu_op            : out fpu_op_t    := fpu_op_bypass;
+		fadd_op           : out fadd_op_t   := fadd_op_add;
+		alu_src           : out alu_src_t   := alu_src_gpr;
+		dmem_src          : out dmem_src_t  := dmem_src_gpr;
+		data_src          : out data_src_t  := data_src_alu;
+		lr_src            : out lr_src_t    := lr_src_pc;
+		ia_src            : out ia_src_t    := ia_src_pc;
+		stall_src         : out stall_src_t := stall_src_go;
+		sender_send       : out std_logic   := '0';
+		recver_recv       : out std_logic   := '0'
 	);
 end control;
 
@@ -77,15 +74,6 @@ begin
 				or   sub_opcode = "0000101000"		-- fneg
 				or   sub_opcode = "0100001000")))	-- fabs
 		else '0';
-
-	--cache_write_enable <= '1'
-	--	when  ((opcode = "100100"					-- st
-	--		or  opcode = "110100"					-- stf
-	--		or (opcode = "011111"
-	--			and (sub_opcode = "0010010111"		-- stx
-	--			or   sub_opcode = "1010010111")))	-- stfx
-	--		or wait_count /= "000")
-	--	else '0';
 
 	dmem_write_enable <= '1'
 		when   (opcode = "100100"					-- st
@@ -225,22 +213,6 @@ begin
 			when (opcode = "111111" and sub_opcode = "0000010100")	-- fsub
 		else fadd_op_add;
 
-	--cache_src <= cache_src_regs
-	--		when (wait_count = "000"
-	--				and (opcode = "100000"					-- ld
-	--				or   opcode = "110010"					-- ldf
-	--				or  (opcode = "011111"
-	--					and (sub_opcode = "0000010111"		-- ldx
-	--					or   sub_opcode = "1001010111"))))	-- ldfx
-	--	else cache_src_dmem
-	--		when (wait_count /= "000"
-	--				and (opcode = "100000"					-- ld
-	--				or   opcode = "110010"					-- ldf
-	--				or  (opcode = "011111"
-	--					and (sub_opcode = "0000010111"		-- ldx
-	--					or   sub_opcode = "1001010111"))))	-- ldfx
-	--	else cache_src_regs;
-
 	data_src <= data_src_alu
 			when   (opcode = "001110"					-- addi
 				or  opcode = "001111"					-- addis
@@ -254,24 +226,10 @@ begin
 					or   sub_opcode = "0110111100"		-- or
 					or   sub_opcode = "0000011000"		-- sl
 					or   sub_opcode = "1000011000")))	-- sr
-		----else data_src_cache
-		----	when (wait_count = "000"
-		----			and (opcode = "100000"					-- ld
-		----			or   opcode = "110010"					-- ldf
-		----			or  (opcode = "011111"
-		----				and (sub_opcode = "0000010111"		-- ldx
-		----				or   sub_opcode = "1001010111"))))	-- ldfx
-		--else data_src_dmem
-		--	when (wait_count /= "000"
-		--			and (opcode = "100000"					-- ld
-		--			or   opcode = "110010"					-- ldf
-		--			or  (opcode = "011111"
-		--				and (sub_opcode = "0000010111"		-- ldx
-		--				or   sub_opcode = "1001010111"))))	-- ldfx
 		else data_src_dmem
-			when    (opcode = "100000"					-- ld
-				or   opcode = "110010"					-- ldf
-				or  (opcode = "011111"
+			when   (opcode = "100000"					-- ld
+				or  opcode = "110010"					-- ldf
+				or (opcode = "011111"
 					and (sub_opcode = "0000010111"		-- ldx
 					or   sub_opcode = "1001010111")))	-- ldfx
 		else data_src_lr
@@ -321,8 +279,7 @@ begin
 				or   sub_opcode = "0000010100"		-- fsub
 				or   sub_opcode = "0000011001"		-- fmul
 				or   sub_opcode = "0000010010")))	-- finv
-		--or (((wait_count = "000" and cache_hit_miss = '0') or (wait_count = "001"))
-		or (wait_count /= "010"	-- 5clk instructions
+		or (wait_count /= "010"	-- 3clk instructions
 			and (opcode = "100000"					-- ld
 			or   opcode = "110010"					-- ldf
 			or  (opcode = "011111"
@@ -357,8 +314,6 @@ begin
 				else
 						wait_count <= wait_count + 1;
 				end if;
-			else
-				wait_count <= "000";
 			end if;
 		end if;
 	end process;

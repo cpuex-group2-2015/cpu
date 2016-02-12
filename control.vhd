@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity control is
 	port (
 		clk               : in  std_logic;
@@ -18,16 +20,16 @@ entity control is
 		cr_f_write_enable : out std_logic                     := '0';
 		lr_write_enable   : out std_logic                     := '0';
 		ctr_write_enable  : out std_logic                     := '0';
-		ext_op            : out std_logic_vector (1 downto 0) := (others => '0');
-		alu_op            : out std_logic_vector (2 downto 0) := (others => '0');
-		alu_src           : out std_logic                     := '0';
-		dmem_src          : out std_logic                     := '0';
-		fpu_op            : out std_logic_vector (1 downto 0) := (others => '0');
-		fadd_op           : out std_logic                     := '0';
-		data_src          : out std_logic_vector (2 downto 0) := (others => '0');
-		lr_src            : out std_logic                     := '0';
-		ia_src            : out std_logic_vector (1 downto 0) := (others => '0');
-		stall_src         : out std_logic                     := '0';
+		ext_op            : out std_logic_vector (1 downto 0) := EXT_OP_UNSIGNED;
+		alu_op            : out std_logic_vector (2 downto 0) := ALU_OP_ADD;
+		fpu_op            : out std_logic_vector (1 downto 0) := FPU_OP_BYPASS;
+		fadd_op           : out std_logic                     := FADD_OP_ADD;
+		alu_src           : out std_logic                     := ALU_SRC_GPR;
+		dmem_src          : out std_logic                     := DMEM_SRC_GPR;
+		regs_src          : out std_logic_vector (2 downto 0) := REGS_SRC_ALU;
+		lr_src            : out std_logic                     := LR_SRC_PC;
+		ia_src            : out std_logic_vector (1 downto 0) := IA_SRC_PC;
+		stall             : out std_logic                     := '0';
 		sender_send       : out std_logic                     := '0';
 		recver_recv       : out std_logic                     := '0'
 	);
@@ -40,264 +42,263 @@ architecture struct of control is
 begin
 
 	gpr_write_enable <= '1'
-		when   (opcode = "000010"					-- recv
-			or  opcode = "100000"					-- ld
-			or  opcode = "001110"					-- addi
-			or  opcode = "001111"					-- addis
-			or  opcode = "011100"					-- andi
-			or  opcode = "011001"					-- ori
-			or  opcode = "010110"					-- mfftg
-			or (opcode = "011111"
-				and (sub_opcode = "0000010111"		-- ldx
-				or   sub_opcode = "0100001010"		-- add
-				or   sub_opcode = "0001101000"		-- neg
-				or   sub_opcode = "0000011100"		-- and
-				or   sub_opcode = "0110111100"		-- or
-				or   sub_opcode = "0101010011"		-- mflr
-				or   sub_opcode = "0000011000"		-- sl
-				or   sub_opcode = "1000011000")))	-- sr
+		when   (opcode = OP_RECV
+			or  opcode = OP_LD
+			or  opcode = OP_ADDI
+			or  opcode = OP_ADDIS
+			or  opcode = OP_ANDI
+			or  opcode = OP_ORI
+			or  opcode = OP_MFFTG
+			or (opcode = OP_3OP
+				and (sub_opcode = SUB_OP_LDX
+				or   sub_opcode = SUB_OP_ADD
+				or   sub_opcode = SUB_OP_NEG
+				or   sub_opcode = SUB_OP_AND
+				or   sub_opcode = SUB_OP_OR
+				or   sub_opcode = SUB_OP_MFLR
+				or   sub_opcode = SUB_OP_SL
+				or   sub_opcode = SUB_OP_SR)))
 		else '0';
 
 	fpr_write_enable <= '1'
-		when   (opcode = "110010"					-- ldf
-			or  opcode = "010101"					-- mfgtf
-			or (opcode = "011111"
-				and  sub_opcode = "1001010111")		-- ldfx
-			or (opcode = "111111"
-				and (sub_opcode = "0001001000"		-- fmr
-				or   sub_opcode = "0000010101"		-- fadd
-				or   sub_opcode = "0000010100"		-- fsub
-				or   sub_opcode = "0000011001"		-- fmul
-				or   sub_opcode = "0000010010"		-- finv
-				or   sub_opcode = "0000101000"		-- fneg
-				or   sub_opcode = "0100001000")))	-- fabs
+		when   (opcode = OP_LDF
+			or  opcode = OP_MFGTF
+			or (opcode = OP_3OP
+				and  sub_opcode = SUB_OP_LDFX)
+			or (opcode = OP_FP
+				and (sub_opcode = SUB_OP_FMR
+				or   sub_opcode = SUB_OP_FADD
+				or   sub_opcode = SUB_OP_FSUB
+				or   sub_opcode = SUB_OP_FMUL
+				or   sub_opcode = SUB_OP_FINV
+				or   sub_opcode = SUB_OP_FNEG
+				or   sub_opcode = SUB_OP_FABS)))
 		else '0';
 
 	dmem_write_enable <= '1'
-		when   (opcode = "100100"					-- st
-			or  opcode = "110100"					-- stf
-			or (opcode = "011111"
-				and (sub_opcode = "0010010111"		-- stx
-				or   sub_opcode = "1010010111")))	-- stfx
+		when   (opcode = OP_ST
+			or  opcode = OP_STF
+			or (opcode = OP_3OP
+				and (sub_opcode = SUB_OP_STX
+				or   sub_opcode = SUB_OP_STFX)))
 		else '0';
 
 	cr_g_write_enable <= '1'
-		when   (opcode = "001011"	-- cmpi
-			or  opcode = "011110")	-- cmp
+		when   (opcode = OP_CMPI
+			or  opcode = OP_CMP)
 		else '0';
 
 	cr_f_write_enable <= '1'
-		when (opcode = "111111" and sub_opcode = "0000000000")	-- fcmp
+		when (opcode = OP_FP and sub_opcode = SUB_OP_FCMP)
 		else '0';
 
 	lr_write_enable <= '1'
-		when  ((opcode = "010010" and branch_op(3) = '1')																-- bl
-			or (opcode = "010000" and cr(conv_integer(branch_op(1 downto 0))) = branch_op(2) and branch_op(3) = '1')	-- bcl
-			or (opcode = "010100" and branch_op(3) = '1')																-- bctrl
-			or (opcode = "011111" and sub_opcode = "0111010011"))														-- mtlr
+		when  ((opcode = OP_B and branch_op(3) = '1')
+			or (opcode = OP_BC and cr(conv_integer(branch_op(1 downto 0))) = branch_op(2) and branch_op(3) = '1')
+			or (opcode = OP_BCTR and branch_op(3) = '1')
+			or (opcode = OP_3OP and sub_opcode = SUB_OP_MTLR))
 		else '0';
 
 	ctr_write_enable <= '1'
-		when   (opcode = "011111" and sub_opcode = "0111010100")	-- mtctr
+		when   (opcode = OP_3OP and sub_opcode = SUB_OP_MTCTR)
 		else '0';
 
-	ext_op <= "00"
-			when   (opcode = "011100"	-- andi
-				or  opcode = "011001"	-- ori
-				or  opcode = "010010"	-- b, bl
-				or  opcode = "010000")	-- bc, bcl
-		else "01"
-			when   (opcode = "100000"	-- ld
-				or  opcode = "110010"	-- ldf
-				or  opcode = "100100"	-- st
-				or  opcode = "110100"	-- stf
-				or  opcode = "001110"	-- addi
-				or  opcode = "001011")	-- cmpi
-		else "11"
-			when   (opcode = "001111")	-- addis
+	ext_op <= EXT_OP_UNSIGNED
+			when   (opcode = OP_ANDI
+				or  opcode = OP_ORI
+				or  opcode = OP_B
+				or  opcode = OP_BC)
+		else EXT_OP_SIGNED
+			when   (opcode = OP_LD
+				or  opcode = OP_LDF
+				or  opcode = OP_ST
+				or  opcode = OP_STF
+				or  opcode = OP_ADDI
+				or  opcode = OP_CMPI)
+		else EXT_OP_SIGNED_SHIFTED
+			when   (opcode = OP_ADDIS)
 		else "--";
 
-	alu_op <= "000"
-			when   (opcode = "100000"					-- ld
-				or  opcode = "110010"					-- ldf
-				or  opcode = "100100"					-- st
-				or  opcode = "110100"					-- stf
-				or  opcode = "001110"					-- addi
-				or  opcode = "001111"					-- addis
-				or (opcode = "011111"
-					and (sub_opcode = "0000010111"		-- ldx
-					or   sub_opcode = "1001010111"		-- ldfx
-					or   sub_opcode = "0010010111"		-- stx
-					or   sub_opcode = "1010010111"		-- stfx
-					or   sub_opcode = "0100001010")))	-- add
-		else "001"
-			when   (opcode = "011111"
-					and  sub_opcode = "0001101000")		-- neg
-
-		else "010"
-			when   (opcode = "011100"					-- andi
-				or (opcode = "011111"
-					and sub_opcode = "0000011100"))		-- and
-		else "011"
-			when   (opcode = "011001"					-- ori
-				or  opcode = "010101"					-- mfgtf
-				or (opcode = "011111"
-					and (sub_opcode = "0110111100"		-- or
-					or   sub_opcode = "0111010011"		-- mtlr
-					or   sub_opcode = "0111010100")))	-- mtctr
-		else "100"
-			when   (opcode = "011111" and sub_opcode = "0000011000")				-- sl
-		else "101"
-			when   (opcode = "011111" and sub_opcode = "1000011000")				-- sr
-		else "110"
-			when   (opcode = "001011"					-- cmpi
-				or  opcode = "011110")					-- cmp
+	alu_op <= ALU_OP_ADD
+			when   (opcode = OP_LD
+				or  opcode = OP_LDF
+				or  opcode = OP_ST
+				or  opcode = OP_STF
+				or  opcode = OP_ADDI
+				or  opcode = OP_ADDIS
+				or (opcode = OP_3OP
+					and (sub_opcode = SUB_OP_LDX
+					or   sub_opcode = SUB_OP_LDFX
+					or   sub_opcode = SUB_OP_STX
+					or   sub_opcode = SUB_OP_STFX
+					or   sub_opcode = SUB_OP_ADD)))
+		else ALU_OP_NEG
+			when   (opcode = OP_3OP
+					and  sub_opcode = SUB_OP_NEG)
+		else ALU_OP_AND
+			when   (opcode = OP_ANDI
+				or (opcode = OP_3OP
+					and sub_opcode = SUB_OP_AND))
+		else ALU_OP_OR
+			when   (opcode = OP_ORI
+				or  opcode = OP_MFGTF
+				or (opcode = OP_3OP
+					and (sub_opcode = SUB_OP_OR
+					or   sub_opcode = SUB_OP_MTLR
+					or   sub_opcode = SUB_OP_MTCTR)))
+		else ALU_OP_SL
+			when   (opcode = OP_3OP and sub_opcode = SUB_OP_SL)
+		else ALU_OP_SR
+			when   (opcode = OP_3OP and sub_opcode = SUB_OP_SR)
+		else ALU_OP_CMP
+			when   (opcode = OP_CMPI
+				or  opcode = OP_CMP)
 		else "---";
 
-	alu_src <= '1'
-			when   (opcode = "100000"					-- ld
-				or  opcode = "110010"					-- ldf
-				or  opcode = "100100"					-- st
-				or  opcode = "110100"					-- stf
-				or  opcode = "001110"					-- addi
-				or  opcode = "001111"					-- addis
-				or  opcode = "011100"					-- andi
-				or  opcode = "011001"					-- ori
-				or  opcode = "001011")					-- cmpi
-		else '0'
-			when   (opcode = "011110"					-- cmp
-				or  opcode = "010101"					-- mfgtf
-				or (opcode = "011111"
-					and (sub_opcode = "0000010111"		-- ldx
-					or   sub_opcode = "1001010111"		-- ldfx
-					or   sub_opcode = "0010010111"		-- stx
-					or   sub_opcode = "1010010111"		-- stfx
-					or   sub_opcode = "0100001010"		-- add
-					or   sub_opcode = "0000011100"		-- and
-					or   sub_opcode = "0110111100"		-- or
-					or   sub_opcode = "0111010011"		-- mtlr
-					or   sub_opcode = "0111010100"		-- mtctr
-					or   sub_opcode = "0000011000"		-- sl
-					or   sub_opcode = "1000011000")))	-- sr
-		else '-';
-
-	dmem_src <= '0'
-			when   (opcode = "000001"					-- send
-				or  opcode = "100100"					-- st
-				or (opcode = "011111"
-					and sub_opcode = "0010010111"))		-- stx
-		else '1'
-			when   (opcode = "110100"					-- stf
-				or (opcode = "011111"
-					and sub_opcode = "1010010111"))		-- stfx
-		else '-';
-
-	fpu_op <= "00"
-			when   (opcode = "010110"					-- mfftg
-				or (opcode = "111111"
-					and  sub_opcode = "0001001000"))	-- fmr
-		else "01"
-			when   (opcode = "111111"
-					and  sub_opcode = "0000101000")		-- fneg
-		else "10"
-			when   (opcode = "111111"
-					and  sub_opcode = "0100001000")		-- fabs
-		else "11"
-			when   (opcode = "111111"
-					and  sub_opcode = "0000000000")		-- fcmp
+	fpu_op <= FPU_OP_BYPASS
+			when   (opcode = OP_MFFTG
+				or (opcode = OP_FP
+					and  sub_opcode = SUB_OP_FMR))
+		else FPU_OP_NEG
+			when   (opcode = OP_FP
+					and  sub_opcode = SUB_OP_FNEG)
+		else FPU_OP_ABS
+			when   (opcode = OP_FP
+					and  sub_opcode = SUB_OP_FABS)
+		else FPU_OP_CMP
+			when   (opcode = OP_FP
+					and  sub_opcode = SUB_OP_FCMP)
 		else "--";
 
-	fadd_op <= '0'
-			when (opcode = "111111" and sub_opcode = "0000010101")	-- fadd
-		else '1'
-			when (opcode = "111111" and sub_opcode = "0000010100")	-- fsub
+	fadd_op <= FADD_OP_ADD
+			when (opcode = OP_FP and sub_opcode = SUB_OP_FADD)
+		else FADD_OP_SUB
+			when (opcode = OP_FP and sub_opcode = SUB_OP_FSUB)
 		else '-';
 
-	data_src <= "000"
-			when   (opcode = "001110"					-- addi
-				or  opcode = "001111"					-- addis
-				or  opcode = "011100"					-- andi
-				or  opcode = "011001"					-- ori
-				or  opcode = "010101"					-- mfgtf
-				or (opcode = "011111"
-					and (sub_opcode = "0100001010"		-- add
-					or   sub_opcode = "0001101000"		-- neg
-					or   sub_opcode = "0000011100"		-- and
-					or   sub_opcode = "0110111100"		-- or
-					or   sub_opcode = "0000011000"		-- sl
-					or   sub_opcode = "1000011000")))	-- sr
-		else "001"
-			when   (opcode = "100000"					-- ld
-				or  opcode = "110010"					-- ldf
-				or (opcode = "011111"
-					and (sub_opcode = "0000010111"		-- ldx
-					or   sub_opcode = "1001010111")))	-- ldfx
-		else "010"
-			when   (opcode = "011111"
-					and  sub_opcode = "0101010011")		-- mflr
-		else "011"
-			when   (opcode = "000010")					-- recv
-		else "100"
-			when   (opcode = "010110"					-- mfftg
-				or (opcode = "111111"
-					and (sub_opcode = "0001001000"		-- fmr
-					or   sub_opcode = "0000101000"		-- fneg
-					or   sub_opcode = "0100001000")))	-- fabs
-		else "101"
-			when   (opcode = "111111"
-					and (sub_opcode = "0000010101"		-- fadd
-					or   sub_opcode = "0000010100"))	-- fsub
-		else "110"
-			when   (opcode = "111111"
-					and  sub_opcode = "0000011001")		-- fmul
-		else "111"
-			when   (opcode = "111111"
-					and  sub_opcode = "0000010010")		-- finv
+	alu_src <= ALU_SRC_GPR
+		when   (opcode = OP_CMP
+			or  opcode = OP_MFGTF
+			or (opcode = OP_3OP
+				and (sub_opcode = SUB_OP_LDX
+				or   sub_opcode = SUB_OP_LDFX
+				or   sub_opcode = SUB_OP_STX
+				or   sub_opcode = SUB_OP_STFX
+				or   sub_opcode = SUB_OP_ADD
+				or   sub_opcode = SUB_OP_AND
+				or   sub_opcode = SUB_OP_OR
+				or   sub_opcode = SUB_OP_MTLR
+				or   sub_opcode = SUB_OP_MTCTR
+				or   sub_opcode = SUB_OP_SL
+				or   sub_opcode = SUB_OP_SR)))
+		else ALU_SRC_EXT
+		when   (opcode = OP_LD
+			or  opcode = OP_LDF
+			or  opcode = OP_ST
+			or  opcode = OP_STF
+			or  opcode = OP_ADDI
+			or  opcode = OP_ADDIS
+			or  opcode = OP_ANDI
+			or  opcode = OP_ORI
+			or  opcode = OP_CMPI)
+		else '-';
+
+	dmem_src <= DMEM_SRC_GPR
+			when   (opcode = OP_SEND
+				or  opcode = OP_ST
+				or (opcode = OP_3OP
+					and sub_opcode = SUB_OP_STX))
+		else DMEM_SRC_FPR
+			when   (opcode = OP_STF
+				or (opcode = OP_3OP
+					and sub_opcode = SUB_OP_STFX))
+		else '-';
+
+	regs_src <= REGS_SRC_ALU
+			when   (opcode = OP_ADDI
+				or  opcode = OP_ADDIS
+				or  opcode = OP_ANDI
+				or  opcode = OP_ORI
+				or  opcode = OP_MFGTF
+				or (opcode = OP_3OP
+					and (sub_opcode = SUB_OP_ADD
+					or   sub_opcode = SUB_OP_NEG
+					or   sub_opcode = SUB_OP_AND
+					or   sub_opcode = SUB_OP_OR
+					or   sub_opcode = SUB_OP_SL
+					or   sub_opcode = SUB_OP_SR)))
+		else REGS_SRC_DMEM
+			when   (opcode = OP_LD
+				or  opcode = OP_LDF
+				or (opcode = OP_3OP
+					and (sub_opcode = SUB_OP_LDX
+					or   sub_opcode = SUB_OP_LDFX)))
+		else REGS_SRC_LR
+			when   (opcode = OP_3OP
+					and  sub_opcode = SUB_OP_MFLR)
+		else REGS_SRC_RECV
+			when   (opcode = OP_RECV)
+		else REGS_SRC_FPU
+			when   (opcode = OP_MFFTG
+				or (opcode = OP_FP
+					and (sub_opcode = SUB_OP_FMR
+					or   sub_opcode = SUB_OP_FNEG
+					or   sub_opcode = SUB_OP_FABS)))
+		else REGS_SRC_FADD
+			when   (opcode = OP_FP
+					and (sub_opcode = SUB_OP_FADD
+					or   sub_opcode = SUB_OP_FSUB))
+		else REGS_SRC_FMUL
+			when   (opcode = OP_FP
+					and  sub_opcode = SUB_OP_FMUL)
+		else REGS_SRC_FINV
+			when   (opcode = OP_FP
+					and  sub_opcode = SUB_OP_FINV)
 		else "---";
 
-	lr_src <= '1'
-			when   (opcode = "011111" and sub_opcode = "0111010011")	-- mtlr
-		else '0'
-			when  ((opcode = "010010" and branch_op(3) = '1')			-- bl
-				or (opcode = "010000" and branch_op(3) = '1')			-- bcl
-				or (opcode = "010100" and branch_op(3) = '1'))			-- bctrl
+	lr_src <= LR_SRC_PC
+			when  ((opcode = OP_B and branch_op(3) = '1')
+				or (opcode = OP_BC and branch_op(3) = '1')
+				or (opcode = OP_BCTR and branch_op(3) = '1'))
+		else LR_SRC_ALU
+			when   (opcode = OP_3OP and sub_opcode = SUB_OP_MTLR)
 		else '-';
 
-	ia_src <= "01"
-			when   (opcode = "010011")																-- blr
-		else "10"
-			when   (opcode = "010100")																-- bctr, bctrl
-		else "11"
-			when   (opcode = "010010"																-- b, bl
-				or (opcode = "010000" and cr(conv_integer(branch_op(1 downto 0))) = branch_op(2)))	-- bc, bcl
-		else "00";
+	ia_src <= IA_SRC_LR
+			when   (opcode = OP_BLR)
+		else IA_SRC_CTR
+			when   (opcode = OP_BCTR)
+		else IA_SRC_EXT
+			when   (opcode = OP_B
+				or (opcode = OP_BC and cr(conv_integer(branch_op(1 downto 0))) = branch_op(2)))
+		else IA_SRC_PC;
 
-	stall_src <= '1'
-		when (opcode = "000001" and sender_full = '1')	-- send
-		or   (opcode = "000010" and recver_empty = '1')	-- recv
+	stall <= '1'
+		when (opcode = OP_SEND and sender_full = '1')
+		or   (opcode = OP_RECV and recver_empty = '1')
 		or (wait_count /= "100"	-- 5clk instructions
-			and (opcode = "111111"
-				and (sub_opcode = "0000010101"		-- fadd
-				or   sub_opcode = "0000010100"		-- fsub
-				or   sub_opcode = "0000011001"		-- fmul
-				or   sub_opcode = "0000010010")))	-- finv
+			and (opcode = OP_FP
+				and (sub_opcode = SUB_OP_FADD
+				or   sub_opcode = SUB_OP_FSUB
+				or   sub_opcode = SUB_OP_FMUL
+				or   sub_opcode = SUB_OP_FINV)))
 		or (wait_count /= "010"	-- 3clk instructions
-			and (opcode = "100000"					-- ld
-			or   opcode = "110010"					-- ldf
-			or  (opcode = "011111"
-				and (sub_opcode = "0000010111"		-- ldx
-				or   sub_opcode = "1001010111"))))	-- ldfx
+			and (opcode = OP_LD
+			or   opcode = OP_LDF
+			or  (opcode = OP_3OP
+				and (sub_opcode = SUB_OP_LDX
+				or   sub_opcode = SUB_OP_LDFX))))
 		else '0';
 
 	process (clk, opcode, sub_opcode, branch_op, cr)
 	begin
 		if (rising_edge(clk)) then
 			-- 5clk instructions
-			if  (opcode = "111111"
-				and (sub_opcode = "0000010101"			-- fadd
-				or   sub_opcode = "0000010100"			-- fsub
-				or   sub_opcode = "0000011001"			-- fmul
-				or   sub_opcode = "0000010010")) then	-- finv
+			if  (opcode = OP_FP
+				and (sub_opcode = SUB_OP_FADD
+				or   sub_opcode = SUB_OP_FSUB
+				or   sub_opcode = SUB_OP_FMUL
+				or   sub_opcode = SUB_OP_FINV)) then
 
 				if (wait_count = "100") then
 						wait_count <= "000";
@@ -305,11 +306,11 @@ begin
 						wait_count <= wait_count + 1;
 				end if;
 			-- 3clk instructions
-			elsif (opcode = "100000"						-- ld
-				or   opcode = "110010"						-- ldf
-				or  (opcode = "011111"
-					and (sub_opcode = "0000010111"			-- ldx
-					or   sub_opcode = "1001010111"))) then	-- ldfx
+		elsif (opcode = OP_LD
+				or   opcode = OP_LDF
+				or  (opcode = OP_3OP
+					and (sub_opcode = SUB_OP_LDX
+					or   sub_opcode = SUB_OP_LDFX))) then
 
 				if (wait_count = "010") then
 						wait_count <= "000";
@@ -320,10 +321,10 @@ begin
 		end if;
 	end process;
 
-	sender_send <= '1' when (opcode = "000001")	-- send
+	sender_send <= '1' when (opcode = OP_SEND)
 		else '0';
 
-	recver_recv <= '1' when (opcode = "000010")	-- recv
+	recver_recv <= '1' when (opcode = OP_RECV)
 		else '0';
 
 end;

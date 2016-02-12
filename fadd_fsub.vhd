@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity fadd_fsub is
 	port (
 		clk       : in  std_logic;
@@ -41,7 +43,7 @@ begin
 	);
 
 	body_in1 <= fadd_in1;
-	body_in2 <= (not fadd_in2(31)) & fadd_in2(30 downto 0) when fadd_op = '1' else fadd_in2;
+	body_in2 <= (not fadd_in2(31)) & fadd_in2(30 downto 0) when fadd_op = FADD_OP_SUB else fadd_in2;
 
 	fadd_out <= inputs1(3) when (inputs2(3)(30 downto 23) = "00000000")
 		   else inputs2(3) when (inputs1(3)(30 downto 23) = "00000000")
@@ -51,7 +53,7 @@ begin
 	begin
 		if (rising_edge(clk)) then
 			inputs1(0) <= fadd_in1;
-			if (fadd_op = '1') then
+			if (fadd_op = FADD_OP_SUB) then
 				inputs2(0) <= (not fadd_in2(31)) & fadd_in2(30 downto 0);
 			else
 				inputs2(0) <= fadd_in2;

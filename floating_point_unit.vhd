@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity floating_point_unit is
 	port (
 		fpu_op   : in  std_logic_vector (1 downto 0);
@@ -24,16 +26,16 @@ begin
 	process(fpu_op, fpu_in1, fpu_in2)
 	begin
 		case fpu_op is
-		when "00" =>						-- bypass
+		when FPU_OP_BYPASS =>
 			fpu_out  <= fpu_in2;
 			fpu_cond <= "0000";
-		when "01" =>						-- neg
+		when FPU_OP_NEG =>
 			fpu_out  <= (not fpu_in2(31)) & fpu_in2(30 downto 0);
 			fpu_cond <= "0000";
-		when "10" =>						-- abs
+		when FPU_OP_ABS =>
 			fpu_out <= '0' & fpu_in2(30 downto 0);
 			fpu_cond <= "0000";
-		when "11" =>						-- cmp
+		when FPU_OP_CMP =>
 			fpu_out <= fpu_in2;
 
 			-- NaN
@@ -42,23 +44,23 @@ begin
 
 			-- fpu_in1 = fpu_in2 = 0
 			elsif (fpu_in1(30 downto 0) = "000000000000000000000000000000" and fpu_in2(30 downto 0) = "000000000000000000000000000000") then
-				fpu_cond <= "0010";				
+				fpu_cond <= COND_EQ & '0';
 
 			-- fpu_in1 < fpu_in2
 			elsif ((fpu_in1(31) = '0' and fpu_in2(31) = '0' and fpu_in1(30 downto 0) < fpu_in2(30 downto 0))
 				or (fpu_in1(31) = '1' and fpu_in2(31) = '1' and fpu_in1(30 downto 0) > fpu_in2(30 downto 0))
 				or (fpu_in1(31) = '1' and fpu_in2(31) = '0')) then
-				fpu_cond <= "1000";
-			
+				fpu_cond <= COND_LT & '0';
+
 			-- fpu_in1 > fpu_in2
 			elsif ((fpu_in1(31) = '0' and fpu_in2(31) = '0' and fpu_in1(30 downto 0) > fpu_in2(30 downto 0))
 				or (fpu_in1(31) = '1' and fpu_in2(31) = '1' and fpu_in1(30 downto 0) < fpu_in2(30 downto 0))
 				or (fpu_in1(31) = '0' and fpu_in2(31) = '1')) then
-				fpu_cond <= "0100";
-			
+				fpu_cond <= COND_GT & '0'
+
 			-- fpu_in1 = fpu_in2
 			else
-				fpu_cond <= "0010";
+				fpu_cond <= COND_EQ & '0';
 			end if;
 		when others =>
 			fpu_out <= fpu_in1;

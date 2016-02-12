@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity arithmetic_logic_unit is
 	port (
 		alu_op   : in  std_logic_vector (2 downto 0);
@@ -27,19 +29,19 @@ begin
 	process(alu_op, alu_in1, alu_in2)
 	begin
 		case alu_op is
-		when "000" =>						-- add
+		when ALU_OP_ADD =>
 			alu_out  <= alu_in1 + alu_in2;
 			alu_cond <= "000";
-		when "001" =>						-- neg
+		when ALU_OP_NEG =>
 			alu_out  <= (not alu_in1) + 1;
 			alu_cond <= "000";
-		when "010" =>						-- and
+		when ALU_OP_AND =>
 			alu_out <= alu_in1 and alu_in2;
 			alu_cond <= "000";
-		when "011" =>						-- or
+		when ALU_OP_OR =>
 			alu_out <= alu_in1 or alu_in2;
 			alu_cond <= "000";
-		when "100" =>						-- sl
+		when ALU_OP_SL =>
 			case alu_in2(4 downto 0) is
 			when "00000" => alu_out <= alu_in1;
 			when "00001" => alu_out <= alu_in1(30 downto 0) & '0';
@@ -76,7 +78,7 @@ begin
 			when others  => alu_out <= alu_in1;
 			end case;
 			alu_cond <= "000";
-		when "101" =>						-- sr
+		when ALU_OP_SR =>
 			case alu_in2(4 downto 0) is
 			when "00000" => alu_out <= alu_in1;
 			when "00001" => alu_out <= '0'                               & alu_in1(31 downto  1);
@@ -113,14 +115,14 @@ begin
 			when others  => alu_out <= alu_in1;
 			end case;
 			alu_cond <= "000";
-		when "110" =>						-- cmp
+		when ALU_OP_CMP =>
 			alu_out <= alu_in1;
 			if ((alu_in1(31) = alu_in2(31) and alu_in1(30 downto 0) < alu_in2(30 downto 0)) or (alu_in1(31) = '1' and alu_in2(31) = '0')) then
-				alu_cond <= "100";	-- alu_in1 < alu_in2
+				alu_cond <= COND_LT;	-- alu_in1 < alu_in2
 			elsif ((alu_in1(31) = alu_in2(31) and alu_in1(30 downto 0) > alu_in2(30 downto 0)) or (alu_in1(31) = '0' and alu_in2(31) = '1')) then
-				alu_cond <= "010";	-- alu_in1 > alu_in2
+				alu_cond <= COND_GT;	-- alu_in1 > alu_in2
 			else
-				alu_cond <= "001";	-- alu_in1 = alu_in2
+				alu_cond <= COND_EQ;	-- alu_in1 = alu_in2
 			end if;
 		when others =>
 			alu_out <= alu_in1;

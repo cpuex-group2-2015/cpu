@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+use work.types.all;
+
 entity core is
 	port (
 		clk    : in    std_logic;
@@ -24,7 +26,7 @@ entity core is
 	);
 end core;
 
-architecture struct of core is 
+architecture struct of core is
 
 	component program_counter is
 		port (
@@ -81,7 +83,7 @@ architecture struct of core is
 			dmem_read_data    : out std_logic_vector (31 downto 0);
 
 			ZD     : inout std_logic_vector (31 downto 0);	-- データ線
-			ZA     : out   std_logic_vector (19 downto 0);	-- アドレス 
+			ZA     : out   std_logic_vector (19 downto 0);	-- アドレス
 			XWA    : out   std_logic;						-- write enable 線
 			XE1    : out   std_logic;						-- 0固定
 			E2A    : out   std_logic;						-- 1固定
@@ -219,14 +221,14 @@ architecture struct of core is
 			ctr_write_enable  : out std_logic;
 			ext_op            : out std_logic_vector (1 downto 0);
 			alu_op            : out std_logic_vector (2 downto 0);
-			alu_src           : out std_logic;
-			dmem_src          : out std_logic;
 			fpu_op            : out std_logic_vector (1 downto 0);
 			fadd_op           : out std_logic;
-			data_src          : out std_logic_vector (2 downto 0);
+			alu_src           : out std_logic;
+			dmem_src          : out std_logic;
+			regs_src          : out std_logic_vector (2 downto 0);
 			lr_src            : out std_logic;
 			ia_src            : out std_logic_vector (1 downto 0);
-			stall_src         : out std_logic;
+			stall             : out std_logic;
 			sender_send       : out std_logic;
 			recver_recv       : out std_logic
 		);
@@ -237,7 +239,7 @@ architecture struct of core is
 
 	signal instruction_address : std_logic_vector (31 downto 0) := (others => '0');
 	signal instruction         : std_logic_vector (31 downto 0) := (others => '0');
-	
+
 	signal selected_ia  : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal gpr_write_enable  : std_logic                      := '0';
@@ -265,19 +267,23 @@ architecture struct of core is
 	signal dmem_write_data   : std_logic_vector (31 downto 0) := (others => '0');
 	signal dmem_read_data    : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal alu_op   : std_logic_vector (2 downto 0)  := (others => '0');
+	signal ext_op  : std_logic_vector (1 downto 0)  := EXT_OP_UNSIGNED;
+	signal ext_in  : std_logic_vector (15 downto 0) := (others => '0');
+	signal ext_out : std_logic_vector (31 downto 0) := (others => '0');
+
+	signal alu_op   : std_logic_vector (2 downto 0)  := ALU_OP_ADD;
 	signal alu_in1  : std_logic_vector (31 downto 0) := (others => '0');
 	signal alu_in2  : std_logic_vector (31 downto 0) := (others => '0');
 	signal alu_cond : std_logic_vector (2 downto 0)  := (others => '0');
 	signal alu_out  : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal fpu_op   : std_logic_vector (1 downto 0)  := (others => '0');
+	signal fpu_op   : std_logic_vector (1 downto 0)  := FPU_OP_BYPASS;
 	signal fpu_in1  : std_logic_vector (31 downto 0) := (others => '0');
 	signal fpu_in2  : std_logic_vector (31 downto 0) := (others => '0');
 	signal fpu_cond : std_logic_vector (3 downto 0)  := (others => '0');
 	signal fpu_out  : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal fadd_op   : std_logic                      := '0';
+	signal fadd_op   : std_logic                      := FADD_OP_ADD;
 	signal fadd_in1  : std_logic_vector (31 downto 0) := (others => '0');
 	signal fadd_in2  : std_logic_vector (31 downto 0) := (others => '0');
 	signal fadd_out  : std_logic_vector (31 downto 0) := (others => '0');
@@ -288,10 +294,6 @@ architecture struct of core is
 
 	signal finv_in   : std_logic_vector (31 downto 0) := (others => '0');
 	signal finv_out  : std_logic_vector (31 downto 0) := (others => '0');
-
-	signal ext_op  : std_logic_vector (1 downto 0)  := (others => '0');
-	signal ext_in  : std_logic_vector (15 downto 0) := (others => '0');
-	signal ext_out : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal cr_g_write_enable : std_logic                     := '0';
 	signal cr_f_write_enable : std_logic                     := '0';
@@ -317,12 +319,12 @@ architecture struct of core is
 	signal recver_empty : std_logic                      := '0';
 	signal recver_out   : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal alu_src      : std_logic                     := '0';
-	signal dmem_src     : std_logic                     := '0';
-	signal data_src     : std_logic_vector (2 downto 0) := (others => '0');
-	signal lr_src       : std_logic                     := '0';
-	signal ia_src       : std_logic_vector (1 downto 0) := (others => '0');
-	signal stall_src    : std_logic                     := '0';
+	signal alu_src  : std_logic                     := ALU_SRC_GPR;
+	signal dmem_src : std_logic                     := DMEM_SRC_GPR;
+	signal regs_src : std_logic_vector (2 downto 0) := REGS_SRC_ALU;
+	signal lr_src   : std_logic                     := LR_SRC_PC;
+	signal ia_src   : std_logic_vector (1 downto 0) := IA_SRC_PC;
+	signal stall    : std_logic                     := '0';
 
 	signal selected_data : std_logic_vector (31 downto 0) := (others => '0');
 
@@ -390,6 +392,12 @@ begin
 		ZCLKMA => ZCLKMA
 	);
 
+	ext : extend port map (
+		ext_op  => ext_op,
+		ext_in  => ext_in,
+		ext_out => ext_out
+	);
+
 	alu : arithmetic_logic_unit port map (
 		alu_op   => alu_op,
 		alu_in1  => alu_in1,
@@ -425,12 +433,6 @@ begin
 		clk    => clk,
 		input  => finv_in,
 		output => finv_out
-	);
-
-	ext : extend port map (
-		ext_op  => ext_op,
-		ext_in  => ext_in,
-		ext_out => ext_out
 	);
 
 	cr : condition_register port map (
@@ -489,44 +491,44 @@ begin
 		ctr_write_enable  => ctr_write_enable,
 		ext_op            => ext_op,
 		alu_op            => alu_op,
-		alu_src           => alu_src,
-		dmem_src          => dmem_src,
 		fpu_op            => fpu_op,
 		fadd_op           => fadd_op,
-		data_src          => data_src,
+		alu_src           => alu_src,
+		dmem_src          => dmem_src,
+		regs_src          => regs_src,
 		lr_src            => lr_src,
 		ia_src            => ia_src,
-		stall_src         => stall_src,
+		stall             => stall,
 		sender_send       => sender_send,
 		recver_recv       => recver_recv
 	);
 
 	-- data path
 
-	alu_in2 <= ext_out when alu_src = '1' else
+	alu_in2 <= ext_out when alu_src = ALU_SRC_EXT else
 	           gpr_read_data2;
 
-	dmem_write_data <= fpr_read_data3 when dmem_src = '1' else
+	dmem_write_data <= fpr_read_data3 when dmem_src = DMEM_SRC_FPR else
 	                   gpr_read_data3;
 
-	selected_data <= alu_out        when data_src = "000" else
-		             dmem_read_data when data_src = "001" else
-		             lr_out         when data_src = "010" else
-		             recver_out     when data_src = "011" else
-		             fpu_out        when data_src = "100" else
-		             fadd_out       when data_src = "101" else
-		             fmul_out       when data_src = "110" else
+	selected_data <= alu_out        when regs_src = REGS_SRC_ALU  else
+		             dmem_read_data when regs_src = REGS_SRC_DMEM else
+		             lr_out         when regs_src = REGS_SRC_LR   else
+		             recver_out     when regs_src = REGS_SRC_RECV else
+		             fpu_out        when regs_src = REGS_SRC_FPU  else
+		             fadd_out       when regs_src = REGS_SRC_FADD else
+		             fmul_out       when regs_src = REGS_SRC_FMUL else
 		             finv_out;
 
-	lr_in <= alu_out when lr_src = '1' else
+	lr_in <= alu_out when lr_src = LR_SRC_ALU else
 	         pc_out;
 
-	selected_ia <= pc_out  when ia_src = "00" else
-	               lr_out  when ia_src = "01" else
-	               ctr_out when ia_src = "10" else
+	selected_ia <= pc_out  when ia_src = IA_SRC_PC else
+	               lr_out  when ia_src = IA_SRC_LR else
+	               ctr_out when ia_src = IA_SRC_CTR else
 	               ext_out;
 
-	instruction_address <= selected_ia - 1 when stall_src = '1' else
+	instruction_address <= selected_ia - 1 when stall = '1' else
 	                       selected_ia;
 
 	pc_in <= instruction_address when (instruction_address = "11111111111111") else

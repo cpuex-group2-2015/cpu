@@ -2,11 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
-use work.types.all;
-
 entity arithmetic_logic_unit is
 	port (
-		alu_op   : in  alu_op_t;
+		alu_op   : in  std_logic_vector (2 downto 0);
 		alu_in1  : in  std_logic_vector (31 downto 0);
 		alu_in2  : in  std_logic_vector (31 downto 0);
 		alu_cond : out std_logic_vector (2 downto 0);
@@ -14,25 +12,34 @@ entity arithmetic_logic_unit is
 	);
 end arithmetic_logic_unit;
 
+-- alu_op
+-- 000 : add
+-- 001 : neg
+-- 010 : and
+-- 011 : or
+-- 100 : sl
+-- 101 : sr
+-- 110 : cmp
+
 architecture struct of arithmetic_logic_unit is
 begin
 
 	process(alu_op, alu_in1, alu_in2)
 	begin
 		case alu_op is
-		when alu_op_add =>
+		when "000" =>						-- add
 			alu_out  <= alu_in1 + alu_in2;
 			alu_cond <= "000";
-		when alu_op_neg =>
+		when "001" =>						-- neg
 			alu_out  <= (not alu_in1) + 1;
 			alu_cond <= "000";
-		when alu_op_and =>
+		when "010" =>						-- and
 			alu_out <= alu_in1 and alu_in2;
 			alu_cond <= "000";
-		when alu_op_or =>
+		when "011" =>						-- or
 			alu_out <= alu_in1 or alu_in2;
 			alu_cond <= "000";
-		when alu_op_sl =>
+		when "100" =>						-- sl
 			case alu_in2(4 downto 0) is
 			when "00000" => alu_out <= alu_in1;
 			when "00001" => alu_out <= alu_in1(30 downto 0) & '0';
@@ -69,7 +76,7 @@ begin
 			when others  => alu_out <= alu_in1;
 			end case;
 			alu_cond <= "000";
-		when alu_op_sr =>
+		when "101" =>						-- sr
 			case alu_in2(4 downto 0) is
 			when "00000" => alu_out <= alu_in1;
 			when "00001" => alu_out <= '0'                               & alu_in1(31 downto  1);
@@ -106,7 +113,7 @@ begin
 			when others  => alu_out <= alu_in1;
 			end case;
 			alu_cond <= "000";
-		when alu_op_cmp =>
+		when "110" =>						-- cmp
 			alu_out <= alu_in1;
 			if ((alu_in1(31) = alu_in2(31) and alu_in1(30 downto 0) < alu_in2(30 downto 0)) or (alu_in1(31) = '1' and alu_in2(31) = '0')) then
 				alu_cond <= "100";	-- alu_in1 < alu_in2

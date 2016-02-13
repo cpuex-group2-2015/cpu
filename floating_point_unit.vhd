@@ -56,7 +56,7 @@ begin
 			elsif ((fpu_in1(31) = '0' and fpu_in2(31) = '0' and fpu_in1(30 downto 0) > fpu_in2(30 downto 0))
 				or (fpu_in1(31) = '1' and fpu_in2(31) = '1' and fpu_in1(30 downto 0) < fpu_in2(30 downto 0))
 				or (fpu_in1(31) = '0' and fpu_in2(31) = '1')) then
-				fpu_cond <= COND_GT & '0'
+				fpu_cond <= COND_GT & '0';
 
 			-- fpu_in1 = fpu_in2
 			else

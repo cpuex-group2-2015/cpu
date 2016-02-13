@@ -30,47 +30,45 @@ architecture struct of core is
 
 	component program_counter is
 		port (
-			clk		: in  std_logic;
-			pc_in	: in  std_logic_vector (31 downto 0);
-			pc_out	: out std_logic_vector (31 downto 0)
+			clk    : in  std_logic;
+			pc_in  : in  std_logic_vector (31 downto 0);
+			pc_out : out std_logic_vector (31 downto 0)
 		);
 	end component;
 
 	component instruction_memory is
 		port (
-			clk					: in  std_logic;
-			instruction_address	: in  std_logic_vector (31 downto 0);
-			instruction			: out std_logic_vector (31 downto 0)
+			clk                 : in  std_logic;
+			instruction_address : in  std_logic_vector (31 downto 0);
+			instruction         : out std_logic_vector (31 downto 0)
 		);
 	end component;
 
 	component general_purpose_registers is
 		port (
-			clk				    : in  std_logic;
-			gpr_write_enable	: in  std_logic;
-			gpr_read_reg_num1	: in  std_logic_vector (4 downto 0);
-			gpr_read_reg_num2	: in  std_logic_vector (4 downto 0);
-			gpr_read_reg_num3	: in  std_logic_vector (4 downto 0);
-			gpr_write_reg_num	: in  std_logic_vector (4 downto 0);
-			gpr_write_data	    : in  std_logic_vector (31 downto 0);
-			gpr_read_data1		: out std_logic_vector (31 downto 0);
-			gpr_read_data2		: out std_logic_vector (31 downto 0);
-			gpr_read_data3		: out std_logic_vector (31 downto 0)
+			clk              : in  std_logic;
+			gpr_write_enable : in  std_logic;
+			gpr_reg_num1     : in  std_logic_vector (4 downto 0);
+			gpr_reg_num2     : in  std_logic_vector (4 downto 0);
+			gpr_reg_num3     : in  std_logic_vector (4 downto 0);
+			gpr_data_in      : in  std_logic_vector (31 downto 0);
+			gpr_data_out1    : out std_logic_vector (31 downto 0);
+			gpr_data_out2    : out std_logic_vector (31 downto 0);
+			gpr_data_out3    : out std_logic_vector (31 downto 0)
 		);
 	end component;
 
 	component floating_point_registers is
 		port (
-			clk               : in  std_logic;
-			fpr_write_enable  : in  std_logic;
-			fpr_read_reg_num1 : in  std_logic_vector (4 downto 0);
-			fpr_read_reg_num2 : in  std_logic_vector (4 downto 0);
-			fpr_read_reg_num3 : in  std_logic_vector (4 downto 0);
-			fpr_write_reg_num : in  std_logic_vector (4 downto 0);
-			fpr_write_data    : in  std_logic_vector (31 downto 0);
-			fpr_read_data1    : out std_logic_vector (31 downto 0);
-			fpr_read_data2    : out std_logic_vector (31 downto 0);
-			fpr_read_data3    : out std_logic_vector (31 downto 0)
+			clk              : in  std_logic;
+			fpr_write_enable : in  std_logic;
+			fpr_reg_num1     : in  std_logic_vector (4 downto 0);
+			fpr_reg_num2     : in  std_logic_vector (4 downto 0);
+			fpr_reg_num3     : in  std_logic_vector (4 downto 0);
+			fpr_data_in      : in  std_logic_vector (31 downto 0);
+			fpr_data_out1    : out std_logic_vector (31 downto 0);
+			fpr_data_out2    : out std_logic_vector (31 downto 0);
+			fpr_data_out3    : out std_logic_vector (31 downto 0)
 		);
 	end component;
 
@@ -78,9 +76,9 @@ architecture struct of core is
 		port (
 			clk               : in  std_logic;
 			dmem_write_enable : in  std_logic;
-			dmem_data_address : in  std_logic_vector (19 downto 0);
-			dmem_write_data   : in  std_logic_vector (31 downto 0);
-			dmem_read_data    : out std_logic_vector (31 downto 0);
+			dmem_address      : in  std_logic_vector (19 downto 0);
+			dmem_data_in      : in  std_logic_vector (31 downto 0);
+			dmem_data_out     : out std_logic_vector (31 downto 0);
 
 			ZD     : inout std_logic_vector (31 downto 0);	-- データ線
 			ZA     : out   std_logic_vector (19 downto 0);	-- アドレス
@@ -242,30 +240,28 @@ architecture struct of core is
 
 	signal selected_ia  : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal gpr_write_enable  : std_logic                      := '0';
-	signal gpr_read_reg_num1 : std_logic_vector (4 downto 0)  := (others => '0');
-	signal gpr_read_reg_num2 : std_logic_vector (4 downto 0)  := (others => '0');
-	signal gpr_read_reg_num3 : std_logic_vector (4 downto 0)  := (others => '0');
-	signal gpr_write_reg_num : std_logic_vector (4 downto 0)  := (others => '0');
-	signal gpr_write_data    : std_logic_vector (31 downto 0) := (others => '0');
-	signal gpr_read_data1    : std_logic_vector (31 downto 0) := (others => '0');
-	signal gpr_read_data2    : std_logic_vector (31 downto 0) := (others => '0');
-	signal gpr_read_data3    : std_logic_vector (31 downto 0) := (others => '0');
+	signal gpr_write_enable : std_logic                      := '0';
+	signal gpr_reg_num1     : std_logic_vector (4 downto 0)  := (others => '0');
+	signal gpr_reg_num2     : std_logic_vector (4 downto 0)  := (others => '0');
+	signal gpr_reg_num3     : std_logic_vector (4 downto 0)  := (others => '0');
+	signal gpr_data_in      : std_logic_vector (31 downto 0) := (others => '0');
+	signal gpr_data_out1    : std_logic_vector (31 downto 0) := (others => '0');
+	signal gpr_data_out2    : std_logic_vector (31 downto 0) := (others => '0');
+	signal gpr_data_out3    : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal fpr_write_enable  : std_logic                      := '0';
-	signal fpr_read_reg_num1 : std_logic_vector (4 downto 0)  := (others => '0');
-	signal fpr_read_reg_num2 : std_logic_vector (4 downto 0)  := (others => '0');
-	signal fpr_read_reg_num3 : std_logic_vector (4 downto 0)  := (others => '0');
-	signal fpr_write_reg_num : std_logic_vector (4 downto 0)  := (others => '0');
-	signal fpr_write_data    : std_logic_vector (31 downto 0) := (others => '0');
-	signal fpr_read_data1    : std_logic_vector (31 downto 0) := (others => '0');
-	signal fpr_read_data2    : std_logic_vector (31 downto 0) := (others => '0');
-	signal fpr_read_data3    : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpr_write_enable : std_logic                      := '0';
+	signal fpr_reg_num1     : std_logic_vector (4 downto 0)  := (others => '0');
+	signal fpr_reg_num2     : std_logic_vector (4 downto 0)  := (others => '0');
+	signal fpr_reg_num3     : std_logic_vector (4 downto 0)  := (others => '0');
+	signal fpr_data_in      : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpr_data_out1    : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpr_data_out2    : std_logic_vector (31 downto 0) := (others => '0');
+	signal fpr_data_out3    : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal dmem_write_enable : std_logic                      := '0';
-	signal dmem_data_address : std_logic_vector (19 downto 0) := (others => '0');
-	signal dmem_write_data   : std_logic_vector (31 downto 0) := (others => '0');
-	signal dmem_read_data    : std_logic_vector (31 downto 0) := (others => '0');
+	signal dmem_address      : std_logic_vector (19 downto 0) := (others => '0');
+	signal dmem_data_in      : std_logic_vector (31 downto 0) := (others => '0');
+	signal dmem_data_out     : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal ext_op  : std_logic_vector (1 downto 0)  := EXT_OP_UNSIGNED;
 	signal ext_in  : std_logic_vector (15 downto 0) := (others => '0');
@@ -283,17 +279,17 @@ architecture struct of core is
 	signal fpu_cond : std_logic_vector (3 downto 0)  := (others => '0');
 	signal fpu_out  : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal fadd_op   : std_logic                      := FADD_OP_ADD;
-	signal fadd_in1  : std_logic_vector (31 downto 0) := (others => '0');
-	signal fadd_in2  : std_logic_vector (31 downto 0) := (others => '0');
-	signal fadd_out  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fadd_op  : std_logic                      := FADD_OP_ADD;
+	signal fadd_in1 : std_logic_vector (31 downto 0) := (others => '0');
+	signal fadd_in2 : std_logic_vector (31 downto 0) := (others => '0');
+	signal fadd_out : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal fmul_in1  : std_logic_vector (31 downto 0) := (others => '0');
-	signal fmul_in2  : std_logic_vector (31 downto 0) := (others => '0');
-	signal fmul_out  : std_logic_vector (31 downto 0) := (others => '0');
+	signal fmul_in1 : std_logic_vector (31 downto 0) := (others => '0');
+	signal fmul_in2 : std_logic_vector (31 downto 0) := (others => '0');
+	signal fmul_out : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal finv_in   : std_logic_vector (31 downto 0) := (others => '0');
-	signal finv_out  : std_logic_vector (31 downto 0) := (others => '0');
+	signal finv_in  : std_logic_vector (31 downto 0) := (others => '0');
+	signal finv_out : std_logic_vector (31 downto 0) := (others => '0');
 
 	signal cr_g_write_enable : std_logic                     := '0';
 	signal cr_f_write_enable : std_logic                     := '0';
@@ -338,43 +334,41 @@ begin
 	);
 
 	imem : instruction_memory port map (
-		clk					=> clk,
-		instruction_address	=> instruction_address,
-		instruction			=> instruction
+		clk                 => clk,
+		instruction_address => instruction_address,
+		instruction         => instruction
 	);
 
 	gpr : general_purpose_registers port map (
-		clk               => clk,
-		gpr_write_enable  => gpr_write_enable,
-		gpr_read_reg_num1 => gpr_read_reg_num1,
-		gpr_read_reg_num2 => gpr_read_reg_num2,
-		gpr_read_reg_num3 => gpr_read_reg_num3,
-		gpr_write_reg_num => gpr_write_reg_num,
-		gpr_write_data	  => gpr_write_data,
-		gpr_read_data1    => gpr_read_data1,
-		gpr_read_data2    => gpr_read_data2,
-		gpr_read_data3    => gpr_read_data3
+		clk              => clk,
+		gpr_write_enable => gpr_write_enable,
+		gpr_reg_num1     => gpr_reg_num1,
+		gpr_reg_num2     => gpr_reg_num2,
+		gpr_reg_num3     => gpr_reg_num3,
+		gpr_data_in      => gpr_data_in,
+		gpr_data_out1    => gpr_data_out1,
+		gpr_data_out2    => gpr_data_out2,
+		gpr_data_out3    => gpr_data_out3
 	);
 
 	fpr : floating_point_registers port map (
-		clk               => clk,
-		fpr_write_enable  => fpr_write_enable,
-		fpr_read_reg_num1 => fpr_read_reg_num1,
-		fpr_read_reg_num2 => fpr_read_reg_num2,
-		fpr_read_reg_num3 => fpr_read_reg_num3,
-		fpr_write_reg_num => fpr_write_reg_num,
-		fpr_write_data	  => fpr_write_data,
-		fpr_read_data1    => fpr_read_data1,
-		fpr_read_data2    => fpr_read_data2,
-		fpr_read_data3    => fpr_read_data3
+		clk              => clk,
+		fpr_write_enable => fpr_write_enable,
+		fpr_reg_num1     => fpr_reg_num1,
+		fpr_reg_num2     => fpr_reg_num2,
+		fpr_reg_num3     => fpr_reg_num3,
+		fpr_data_in      => fpr_data_in,
+		fpr_data_out1    => fpr_data_out1,
+		fpr_data_out2    => fpr_data_out2,
+		fpr_data_out3    => fpr_data_out3
 	);
 
 	dmem : data_memory port map (
 		clk               => clk,
 		dmem_write_enable => dmem_write_enable,
-		dmem_data_address => dmem_data_address,
-		dmem_write_data   => dmem_write_data,
-		dmem_read_data    => dmem_read_data,
+		dmem_address      => dmem_address,
+		dmem_data_in      => dmem_data_in,
+		dmem_data_out     => dmem_data_out,
 
 		ZD     => ZD,
 		ZA     => ZA,
@@ -506,18 +500,18 @@ begin
 	-- data path
 
 	alu_in2 <= ext_out when alu_src = ALU_SRC_EXT else
-	           gpr_read_data2;
+	           gpr_data_out2;
 
-	dmem_write_data <= fpr_read_data3 when dmem_src = DMEM_SRC_FPR else
-	                   gpr_read_data3;
+	dmem_data_in <= fpr_data_out3 when dmem_src = DMEM_SRC_FPR else
+	                gpr_data_out3;
 
-	selected_data <= alu_out        when regs_src = REGS_SRC_ALU  else
-		             dmem_read_data when regs_src = REGS_SRC_DMEM else
-		             lr_out         when regs_src = REGS_SRC_LR   else
-		             recver_out     when regs_src = REGS_SRC_RECV else
-		             fpu_out        when regs_src = REGS_SRC_FPU  else
-		             fadd_out       when regs_src = REGS_SRC_FADD else
-		             fmul_out       when regs_src = REGS_SRC_FMUL else
+	selected_data <= alu_out       when regs_src = REGS_SRC_ALU  else
+		             dmem_data_out when regs_src = REGS_SRC_DMEM else
+		             lr_out        when regs_src = REGS_SRC_LR   else
+		             recver_out    when regs_src = REGS_SRC_RECV else
+		             fpu_out       when regs_src = REGS_SRC_FPU  else
+		             fadd_out      when regs_src = REGS_SRC_FADD else
+		             fmul_out      when regs_src = REGS_SRC_FMUL else
 		             finv_out;
 
 	lr_in <= alu_out when lr_src = LR_SRC_ALU else
@@ -534,41 +528,39 @@ begin
 	pc_in <= instruction_address when (instruction_address = "11111111111111") else
 	         instruction_address + 1;
 
-	gpr_read_reg_num1 <= instruction(20 downto 16);
-	gpr_read_reg_num2 <= instruction(15 downto 11);
-	gpr_read_reg_num3 <= instruction(25 downto 21);
-	gpr_write_reg_num <= instruction(25 downto 21);
-	gpr_write_data    <= selected_data;
+	gpr_reg_num1 <= instruction(20 downto 16);
+	gpr_reg_num2 <= instruction(15 downto 11);
+	gpr_reg_num3 <= instruction(25 downto 21);
+	gpr_data_in  <= selected_data;
 
-	fpr_read_reg_num1 <= instruction(20 downto 16);
-	fpr_read_reg_num2 <= instruction(15 downto 11);
-	fpr_read_reg_num3 <= instruction(25 downto 21);
-	fpr_write_reg_num <= instruction(25 downto 21);
-	fpr_write_data    <= selected_data;
+	fpr_reg_num1 <= instruction(20 downto 16);
+	fpr_reg_num2 <= instruction(15 downto 11);
+	fpr_reg_num3 <= instruction(25 downto 21);
+	fpr_data_in  <= selected_data;
 
 	ext_in <= instruction(15 downto 0);
 
-	alu_in1 <= gpr_read_data1;
+	alu_in1 <= gpr_data_out1;
 
-	fpu_in1 <= fpr_read_data1;
-	fpu_in2 <= fpr_read_data2;
+	fpu_in1 <= fpr_data_out1;
+	fpu_in2 <= fpr_data_out2;
 
-	fadd_in1 <= fpr_read_data1;
-	fadd_in2 <= fpr_read_data2;
+	fadd_in1 <= fpr_data_out1;
+	fadd_in2 <= fpr_data_out2;
 
-	fmul_in1 <= fpr_read_data1;
-	fmul_in2 <= fpr_read_data2;
+	fmul_in1 <= fpr_data_out1;
+	fmul_in2 <= fpr_data_out2;
 
-	finv_in <= fpr_read_data2;
+	finv_in <= fpr_data_out2;
 
 	cr_in_g <= alu_cond;
 	cr_in_f <= fpu_cond;
 
 	ctr_in <= alu_out;
 
-	dmem_data_address <= alu_out(19 downto 0);
+	dmem_address <= alu_out(19 downto 0);
 
-	sender_in <= dmem_write_data;
+	sender_in <= dmem_data_in;
 	RS_TX     <= sender_out;
 	recver_in <= RS_RX;
 

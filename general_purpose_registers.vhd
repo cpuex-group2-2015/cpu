@@ -9,6 +9,7 @@ entity general_purpose_registers is
 		gpr_reg_num1     : in  std_logic_vector (4 downto 0);
 		gpr_reg_num2     : in  std_logic_vector (4 downto 0);
 		gpr_reg_num3     : in  std_logic_vector (4 downto 0);
+		gpr_reg_numw     : in  std_logic_vector (4 downto 0);
 		gpr_data_in      : in  std_logic_vector (31 downto 0);
 		gpr_data_out1    : out std_logic_vector (31 downto 0);
 		gpr_data_out2    : out std_logic_vector (31 downto 0);
@@ -23,10 +24,10 @@ architecture struct of general_purpose_registers is
 
 begin
 
-	gpr_data_out1 <= gpr(conv_integer(gpr_reg_num1));
-	gpr_data_out2 <= gpr(conv_integer(gpr_reg_num2));
-	gpr_data_out3 <= gpr(conv_integer(gpr_reg_num3));
+	gpr_data_out1 <= gpr_data_in when gpr_write_enable = '1' and gpr_reg_num1 = gpr_reg_numw else gpr(conv_integer(gpr_reg_num1));
+	gpr_data_out2 <= gpr_data_in when gpr_write_enable = '1' and gpr_reg_num2 = gpr_reg_numw else gpr(conv_integer(gpr_reg_num2));
+	gpr_data_out3 <= gpr_data_in when gpr_write_enable = '1' and gpr_reg_num3 = gpr_reg_numw else gpr(conv_integer(gpr_reg_num3));
 
-	gpr(conv_integer(gpr_reg_num3)) <= gpr_data_in when rising_edge(clk) and gpr_write_enable = '1' and gpr_reg_num3 /= "00000";
+	gpr(conv_integer(gpr_reg_numw)) <= gpr_data_in when rising_edge(clk) and gpr_write_enable = '1' and gpr_reg_numw /= "00000";
 
 end;

@@ -118,4 +118,18 @@ package types is
     -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0350";
     -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"01A8";
 
+    constant FWD_SRC_REG      : std_logic_vector (3 downto 0) := "0000";
+    constant FWD_SRC_ALU_MEM  : std_logic_vector (3 downto 0) := "0001";
+    constant FWD_SRC_LR_MEM   : std_logic_vector (3 downto 0) := "0010";
+    constant FWD_SRC_FPU_MEM  : std_logic_vector (3 downto 0) := "0011";
+    constant FWD_SRC_FADD_MEM : std_logic_vector (3 downto 0) := "0100";
+    constant FWD_SRC_FMUL_MEM : std_logic_vector (3 downto 0) := "0101";
+    constant FWD_SRC_FINV_MEM : std_logic_vector (3 downto 0) := "0110";
+    constant FWD_SRC_ALU_WB   : std_logic_vector (3 downto 0) := "1001";
+    constant FWD_SRC_LR_WB    : std_logic_vector (3 downto 0) := "1010";
+    constant FWD_SRC_FPU_WB   : std_logic_vector (3 downto 0) := "1011";
+    constant FWD_SRC_FADD_WB  : std_logic_vector (3 downto 0) := "1100";
+    constant FWD_SRC_FMUL_WB  : std_logic_vector (3 downto 0) := "1101";
+    constant FWD_SRC_FINV_WB  : std_logic_vector (3 downto 0) := "1110";
+
 end package;

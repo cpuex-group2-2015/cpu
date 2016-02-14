@@ -9,6 +9,7 @@ entity floating_point_registers is
 		fpr_reg_num1     : in  std_logic_vector (4 downto 0);
 		fpr_reg_num2     : in  std_logic_vector (4 downto 0);
 		fpr_reg_num3     : in  std_logic_vector (4 downto 0);
+		fpr_reg_numw     : in  std_logic_vector (4 downto 0);
 		fpr_data_in      : in  std_logic_vector (31 downto 0);
 		fpr_data_out1    : out std_logic_vector (31 downto 0);
 		fpr_data_out2    : out std_logic_vector (31 downto 0);
@@ -23,10 +24,10 @@ architecture struct of floating_point_registers is
 
 begin
 
-	fpr_data_out1 <= fpr(conv_integer(fpr_reg_num1));
-	fpr_data_out2 <= fpr(conv_integer(fpr_reg_num2));
-	fpr_data_out3 <= fpr(conv_integer(fpr_reg_num3));
+	fpr_data_out1 <= fpr_data_in when fpr_write_enable = '1' and fpr_reg_num1 = fpr_reg_numw else fpr(conv_integer(fpr_reg_num1));
+	fpr_data_out2 <= fpr_data_in when fpr_write_enable = '1' and fpr_reg_num2 = fpr_reg_numw else fpr(conv_integer(fpr_reg_num2));
+	fpr_data_out3 <= fpr_data_in when fpr_write_enable = '1' and fpr_reg_num3 = fpr_reg_numw else fpr(conv_integer(fpr_reg_num3));
 
-	fpr(conv_integer(fpr_reg_num3)) <= fpr_data_in when rising_edge(clk) and fpr_write_enable = '1';
+	fpr(conv_integer(fpr_reg_numw)) <= fpr_data_in when rising_edge(clk) and fpr_write_enable = '1';
 
 end;

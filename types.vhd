@@ -60,12 +60,10 @@ package types is
     constant ALU_OP_OR  : std_logic_vector (2 downto 0) := "011";
     constant ALU_OP_SL  : std_logic_vector (2 downto 0) := "100";
     constant ALU_OP_SR  : std_logic_vector (2 downto 0) := "101";
-    constant ALU_OP_CMP : std_logic_vector (2 downto 0) := "110";
 
     constant FPU_OP_BYPASS : std_logic_vector (1 downto 0) := "00";
     constant FPU_OP_NEG    : std_logic_vector (1 downto 0) := "01";
     constant FPU_OP_ABS    : std_logic_vector (1 downto 0) := "10";
-    constant FPU_OP_CMP    : std_logic_vector (1 downto 0) := "11";
 
     constant FADD_OP_ADD : std_logic := '0';
     constant FADD_OP_SUB : std_logic := '1';
@@ -125,11 +123,15 @@ package types is
     constant FWD_SRC_FADD_MEM : std_logic_vector (3 downto 0) := "0100";
     constant FWD_SRC_FMUL_MEM : std_logic_vector (3 downto 0) := "0101";
     constant FWD_SRC_FINV_MEM : std_logic_vector (3 downto 0) := "0110";
-    constant FWD_SRC_ALU_WB   : std_logic_vector (3 downto 0) := "1001";
-    constant FWD_SRC_LR_WB    : std_logic_vector (3 downto 0) := "1010";
-    constant FWD_SRC_FPU_WB   : std_logic_vector (3 downto 0) := "1011";
-    constant FWD_SRC_FADD_WB  : std_logic_vector (3 downto 0) := "1100";
-    constant FWD_SRC_FMUL_WB  : std_logic_vector (3 downto 0) := "1101";
-    constant FWD_SRC_FINV_WB  : std_logic_vector (3 downto 0) := "1110";
+    constant FWD_SRC_ALU_WB   : std_logic_vector (3 downto 0) := "0111";
+    constant FWD_SRC_LR_WB    : std_logic_vector (3 downto 0) := "1000";
+    constant FWD_SRC_FPU_WB   : std_logic_vector (3 downto 0) := "1001";
+    constant FWD_SRC_FADD_WB  : std_logic_vector (3 downto 0) := "1010";
+    constant FWD_SRC_FMUL_WB  : std_logic_vector (3 downto 0) := "1011";
+    constant FWD_SRC_FINV_WB  : std_logic_vector (3 downto 0) := "1100";
+
+    constant FWD_SRC_REGS_WB  : std_logic_vector (1 downto 0) := "00";
+    constant FWD_SRC_DMEM_WB  : std_logic_vector (1 downto 0) := "01";
+    constant FWD_SRC_RECV_WB  : std_logic_vector (1 downto 0) := "10";
 
 end package;

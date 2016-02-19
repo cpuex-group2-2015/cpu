@@ -7,7 +7,7 @@
 -- \   \   \/     Version : 14.4
 --  \   \         Application : xaw2vhdl
 --  /   /         Filename : cpu_clk.vhd
--- /___/   /\     Timestamp : 02/06/2016 22:28:40
+-- /___/   /\     Timestamp : 02/16/2016 21:24:36
 -- \   \  /  \ 
 --  \___\/\___\ 
 --

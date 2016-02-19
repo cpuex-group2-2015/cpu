@@ -6,32 +6,32 @@ use work.types.all;
 
 entity control is
 	port (
-		clk               : in  std_logic;
-		opcode            : in  std_logic_vector (5 downto 0);
-		sub_opcode        : in  std_logic_vector (9 downto 0);
-		branch_op         : in  std_logic_vector (3 downto 0);
-		cr                : in  std_logic_vector (3 downto 0);
-		sender_full       : in  std_logic;
-		recver_empty      : in  std_logic;
-		gpr_write_enable  : out std_logic                     := '0';
-		fpr_write_enable  : out std_logic                     := '0';
-		dmem_write_enable : out std_logic                     := '0';
-		cr_g_write_enable : out std_logic                     := '0';
-		cr_f_write_enable : out std_logic                     := '0';
-		lr_write_enable   : out std_logic                     := '0';
-		ctr_write_enable  : out std_logic                     := '0';
-		ext_op            : out std_logic_vector (1 downto 0) := EXT_OP_UNSIGNED;
-		alu_op            : out std_logic_vector (2 downto 0) := ALU_OP_ADD;
-		fpu_op            : out std_logic_vector (1 downto 0) := FPU_OP_BYPASS;
-		fadd_op           : out std_logic                     := FADD_OP_ADD;
-		alu_src           : out std_logic                     := ALU_SRC_GPR;
-		dmem_src          : out std_logic                     := DMEM_SRC_GPR;
-		regs_src          : out std_logic_vector (2 downto 0) := REGS_SRC_ALU;
-		lr_src            : out std_logic                     := LR_SRC_PC;
-		ia_src            : out std_logic_vector (1 downto 0) := IA_SRC_PC;
-		stall             : out std_logic                     := '0';
-		sender_send       : out std_logic                     := '0';
-		recver_recv       : out std_logic                     := '0'
+		clk                : in  std_logic;
+		opcode             : in  std_logic_vector (5 downto 0);
+		sub_opcode         : in  std_logic_vector (9 downto 0);
+		branch_op          : in  std_logic_vector (3 downto 0);
+		cr                 : in  std_logic_vector (3 downto 0);
+		sender_full        : in  std_logic;
+		recver_empty       : in  std_logic;
+		gpr_write_enable   : out std_logic                     := '0';
+		fpr_write_enable   : out std_logic                     := '0';
+		dmem_write_enable  : out std_logic                     := '0';
+		cr_gp_write_enable : out std_logic                     := '0';
+		cr_fp_write_enable : out std_logic                     := '0';
+		lr_write_enable    : out std_logic                     := '0';
+		ctr_write_enable   : out std_logic                     := '0';
+		ext_op             : out std_logic_vector (1 downto 0) := EXT_OP_UNSIGNED;
+		alu_op             : out std_logic_vector (2 downto 0) := ALU_OP_ADD;
+		fpu_op             : out std_logic_vector (1 downto 0) := FPU_OP_BYPASS;
+		fadd_op            : out std_logic                     := FADD_OP_ADD;
+		alu_src            : out std_logic                     := ALU_SRC_GPR;
+		dmem_src           : out std_logic                     := DMEM_SRC_GPR;
+		regs_src           : out std_logic_vector (2 downto 0) := REGS_SRC_ALU;
+		lr_src             : out std_logic                     := LR_SRC_PC;
+		ia_src             : out std_logic_vector (1 downto 0) := IA_SRC_PC;
+		stall              : out std_logic                     := '0';
+		sender_send        : out std_logic                     := '0';
+		recver_recv        : out std_logic                     := '0'
 	);
 end control;
 
@@ -83,12 +83,12 @@ begin
 				or   sub_opcode = SUB_OP_STFX)))
 		else '0';
 
-	cr_g_write_enable <= '1'
+	cr_gp_write_enable <= '1'
 		when   (opcode = OP_CMPI
 			or  opcode = OP_CMP)
 		else '0';
 
-	cr_f_write_enable <= '1'
+	cr_fp_write_enable <= '1'
 		when (opcode = OP_FP and sub_opcode = SUB_OP_FCMP)
 		else '0';
 
@@ -150,9 +150,6 @@ begin
 			when   (opcode = OP_3OP and sub_opcode = SUB_OP_SL)
 		else ALU_OP_SR
 			when   (opcode = OP_3OP and sub_opcode = SUB_OP_SR)
-		else ALU_OP_CMP
-			when   (opcode = OP_CMPI
-				or  opcode = OP_CMP)
 		else "---";
 
 	fpu_op <= FPU_OP_BYPASS
@@ -165,9 +162,6 @@ begin
 		else FPU_OP_ABS
 			when   (opcode = OP_FP
 					and  sub_opcode = SUB_OP_FABS)
-		else FPU_OP_CMP
-			when   (opcode = OP_FP
-					and  sub_opcode = SUB_OP_FCMP)
 		else "--";
 
 	fadd_op <= FADD_OP_ADD

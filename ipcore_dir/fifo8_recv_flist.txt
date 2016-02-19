@@ -50,8 +50,8 @@ fifo8_recv.asy
 fifo8_recv.gise
 fifo8_recv.ngc
 fifo8_recv.sym
-fifo8_recv.vhd
-fifo8_recv.vho
+fifo8_recv.v
+fifo8_recv.veo
 fifo8_recv.xco
 fifo8_recv.xise
 fifo8_recv_flist.txt

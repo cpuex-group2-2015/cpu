@@ -49,9 +49,9 @@
 cp ../../../block_ram.mif .
 
 
-echo "Compiling Core VHDL UNISIM/Behavioral model"
-vhpcomp  -work work ../../../block_ram.vhd 
-vhpcomp  -work work ../../example_design/block_ram_exdes.vhd
+echo "Compiling Core Verilog UNISIM/Behavioral model"
+vlogcomp -work work ../../../block_ram.v 
+vhpcomp -work work ../../example_design/block_ram_exdes.vhd
 
 echo "Compiling Test Bench Files"
 
@@ -61,7 +61,8 @@ vhpcomp -work work    ../bmg_stim_gen.vhd
 vhpcomp -work work    ../block_ram_synth.vhd 
 vhpcomp -work work    ../block_ram_tb.vhd
 
-fuse work.block_ram_tb -L unisims -L xilinxcorelib -o block_ram_tb.exe
 
+vlogcomp -work work $XILINX/verilog/src/glbl.v
+fuse work.block_ram_tb work.glbl -L unisims_ver -L xilinxcorelib_ver -o block_ram_tb.exe
 
 ./block_ram_tb.exe -gui -tclbatch simcmds.tcl

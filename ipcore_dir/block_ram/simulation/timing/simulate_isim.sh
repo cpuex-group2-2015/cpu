@@ -49,8 +49,7 @@
 cp ../../../block_ram.mif .
 
 
-echo "Compiling Core VHDL UNISIM/Behavioral model"
-vhpcomp  -work work ../../implement/results/routed.vhd
+vlogcomp -work work ../../implement/results/routed.v
 
 echo "Compiling Test Bench Files"
 
@@ -60,7 +59,6 @@ vhpcomp -work work    ../bmg_stim_gen.vhd
 vhpcomp -work work    ../block_ram_synth.vhd 
 vhpcomp -work work    ../block_ram_tb.vhd
 
-
-    fuse -L simprim work.block_ram_tb -o block_ram_tb.exe
+    fuse -L simprims_ver work.block_ram_tb work.glbl -o block_ram_tb.exe
 
 ./block_ram_tb.exe -sdftyp /block_ram_tb/block_ram_synth_inst/bmg_port=../../implement/results/routed.sdf -gui -tclbatch simcmds.tcl

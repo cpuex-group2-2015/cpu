@@ -46,32 +46,32 @@ architecture struct of core is
 
     component control is
         port (
-            clk               : in  std_logic;
-            opcode            : in  std_logic_vector (5 downto 0);
-            sub_opcode        : in  std_logic_vector (9 downto 0);
-            branch_op         : in  std_logic_vector (3 downto 0);
-            cr                : in  std_logic_vector (3 downto 0);
-            sender_full       : in  std_logic;
-            recver_empty      : in  std_logic;
-            gpr_write_enable  : out std_logic;
-            fpr_write_enable  : out std_logic;
-            dmem_write_enable : out std_logic;
-            cr_g_write_enable : out std_logic;
-            cr_f_write_enable : out std_logic;
-            lr_write_enable   : out std_logic;
-            ctr_write_enable  : out std_logic;
-            ext_op            : out std_logic_vector (1 downto 0);
-            alu_op            : out std_logic_vector (2 downto 0);
-            fpu_op            : out std_logic_vector (1 downto 0);
-            fadd_op           : out std_logic;
-            alu_src           : out std_logic;
-            dmem_src          : out std_logic;
-            regs_src          : out std_logic_vector (2 downto 0);
-            lr_src            : out std_logic;
-            ia_src            : out std_logic_vector (1 downto 0);
-            stall             : out std_logic;
-            sender_send       : out std_logic;
-            recver_recv       : out std_logic
+            clk                : in  std_logic;
+            opcode             : in  std_logic_vector (5 downto 0);
+            sub_opcode         : in  std_logic_vector (9 downto 0);
+            branch_op          : in  std_logic_vector (3 downto 0);
+            cr                 : in  std_logic_vector (3 downto 0);
+            sender_full        : in  std_logic;
+            recver_empty       : in  std_logic;
+            gpr_write_enable   : out std_logic;
+            fpr_write_enable   : out std_logic;
+            dmem_write_enable  : out std_logic;
+            cr_gp_write_enable : out std_logic;
+            cr_fp_write_enable : out std_logic;
+            lr_write_enable    : out std_logic;
+            ctr_write_enable   : out std_logic;
+            ext_op             : out std_logic_vector (1 downto 0);
+            alu_op             : out std_logic_vector (2 downto 0);
+            fpu_op             : out std_logic_vector (1 downto 0);
+            fadd_op            : out std_logic;
+            alu_src            : out std_logic;
+            dmem_src           : out std_logic;
+            regs_src           : out std_logic_vector (2 downto 0);
+            lr_src             : out std_logic;
+            ia_src             : out std_logic_vector (1 downto 0);
+            stall              : out std_logic;
+            sender_send        : out std_logic;
+            recver_recv        : out std_logic
         );
     end component;
 
@@ -118,7 +118,6 @@ architecture struct of core is
             alu_op   : in  std_logic_vector (2 downto 0);
             alu_in1  : in  std_logic_vector (31 downto 0);
             alu_in2  : in  std_logic_vector (31 downto 0);
-            alu_cond : out std_logic_vector (2 downto 0);
             alu_out  : out std_logic_vector (31 downto 0)
         );
     end component;
@@ -128,7 +127,6 @@ architecture struct of core is
             fpu_op   : in  std_logic_vector (1 downto 0);
             fpu_in1  : in  std_logic_vector (31 downto 0);
             fpu_in2  : in  std_logic_vector (31 downto 0);
-            fpu_cond : out std_logic_vector (3 downto 0);
             fpu_out  : out std_logic_vector (31 downto 0)
         );
     end component;
@@ -187,12 +185,12 @@ architecture struct of core is
 
     component condition_register is
         port (
-            clk               : in  std_logic;
-            cr_g_write_enable : in  std_logic;
-            cr_f_write_enable : in  std_logic;
-            cr_in_g           : in  std_logic_vector (2 downto 0);
-            cr_in_f           : in  std_logic_vector (3 downto 0);
-            cr_out            : out std_logic_vector (3 downto 0)
+            clk                : in  std_logic;
+            cr_gp_write_enable : in  std_logic;
+            cr_fp_write_enable : in  std_logic;
+            cr_gp_in           : in  std_logic_vector (2 downto 0);
+            cr_fp_in           : in  std_logic_vector (3 downto 0);
+            cr_out             : out std_logic_vector (3 downto 0)
         );
     end component;
 
@@ -236,13 +234,27 @@ architecture struct of core is
     
     component forwarding_unit is
         port (
-            clk             : in  std_logic;
-            instruction_ex  : in  std_logic_vector (31 downto 0);
-            instruction_mem : in  std_logic_vector (31 downto 0);
-            instruction_wb  : in  std_logic_vector (31 downto 0);
-            fwd_src1        : out std_logic_vector (3 downto 0);
-            fwd_src2        : out std_logic_vector (3 downto 0);
-            fwd_src3        : out std_logic_vector (3 downto 0)
+            clk                : in  std_logic;
+            instruction_ex     : in  std_logic_vector (31 downto 0);
+            instruction_mem    : in  std_logic_vector (31 downto 0);
+            instruction_wb     : in  std_logic_vector (31 downto 0);
+            fwd_src_alu1_ex    : out std_logic_vector (3 downto 0);
+            fwd_src_alu2_ex    : out std_logic_vector (3 downto 0);
+            fwd_src_fpu1_ex    : out std_logic_vector (3 downto 0);
+            fwd_src_fpu2_ex    : out std_logic_vector (3 downto 0);
+            fwd_src_mem_io_ex  : out std_logic_vector (3 downto 0);
+            fwd_src_mem_io_mem : out std_logic_vector (1 downto 0)
+        );
+    end component;
+
+    component compare_unit is
+        port (
+            gp_in1  : in  std_logic_vector (31 downto 0);
+            gp_in2  : in  std_logic_vector (31 downto 0);
+            fp_in1  : in  std_logic_vector (31 downto 0);
+            fp_in2  : in  std_logic_vector (31 downto 0);
+            gp_cond : out std_logic_vector (2 downto 0);
+            fp_cond : out std_logic_vector (3 downto 0)
         );
     end component;
 
@@ -301,7 +313,6 @@ architecture struct of core is
     signal alu_op_ex   : std_logic_vector (2 downto 0)  := ALU_OP_ADD;
     signal alu_in1_ex  : std_logic_vector (31 downto 0) := (others => '0');
     signal alu_in2_ex  : std_logic_vector (31 downto 0) := (others => '0');
-    signal alu_cond_ex : std_logic_vector (2 downto 0)  := (others => '0');
     signal alu_out_ex  : std_logic_vector (31 downto 0) := (others => '0');
     signal alu_out_mem : std_logic_vector (31 downto 0) := (others => '0');
     signal alu_out_wb  : std_logic_vector (31 downto 0) := (others => '0');
@@ -310,7 +321,6 @@ architecture struct of core is
     signal fpu_op_ex   : std_logic_vector (1 downto 0)  := FPU_OP_BYPASS;
     signal fpu_in1_ex  : std_logic_vector (31 downto 0) := (others => '0');
     signal fpu_in2_ex  : std_logic_vector (31 downto 0) := (others => '0');
-    signal fpu_cond_ex : std_logic_vector (3 downto 0)  := (others => '0');
     signal fpu_out_ex  : std_logic_vector (31 downto 0) := (others => '0');
     signal fpu_out_mem : std_logic_vector (31 downto 0) := (others => '0');
     signal fpu_out_wb  : std_logic_vector (31 downto 0) := (others => '0');
@@ -333,21 +343,20 @@ architecture struct of core is
     signal dmem_write_enable_ex  : std_logic                      := '0';
     signal dmem_write_enable_mem : std_logic                      := '0';
     signal dmem_address_mem      : std_logic_vector (19 downto 0) := (others => '0');
-    signal dmem_data_in_mem      : std_logic_vector (31 downto 0) := (others => '0');
     signal dmem_data_out_mem     : std_logic_vector (31 downto 0) := (others => '0');
     signal dmem_data_out_wb      : std_logic_vector (31 downto 0) := (others => '0');
 
-    signal mem_data_in_ex : std_logic_vector (31 downto 0) := (others => '0');
+    signal mem_io_in_ex   : std_logic_vector (31 downto 0) := (others => '0');
+    signal mem_io_in_mem1 : std_logic_vector (31 downto 0) := (others => '0');
+    signal mem_io_in_mem2 : std_logic_vector (31 downto 0) := (others => '0');
 
-    signal cr_g_write_enable_id  : std_logic                     := '0';
-    signal cr_g_write_enable_ex  : std_logic                     := '0';
-    signal cr_g_write_enable_mem : std_logic                     := '0';
-    signal cr_f_write_enable_id  : std_logic                     := '0';
-    signal cr_f_write_enable_ex  : std_logic                     := '0';
-    signal cr_f_write_enable_mem : std_logic                     := '0';
-    signal cr_in_g_mem           : std_logic_vector (2 downto 0) := (others => '0');
-    signal cr_in_f_mem           : std_logic_vector (3 downto 0) := (others => '0');
-    signal cr_out_mem            : std_logic_vector (3 downto 0) := (others => '0');
+    signal cr_gp_write_enable_id  : std_logic                     := '0';
+    signal cr_gp_write_enable_ex  : std_logic                     := '0';
+    signal cr_fp_write_enable_id  : std_logic                     := '0';
+    signal cr_fp_write_enable_ex  : std_logic                     := '0';
+    signal cr_gp_in_ex            : std_logic_vector (2 downto 0) := (others => '0');
+    signal cr_fp_in_ex            : std_logic_vector (3 downto 0) := (others => '0');
+    signal cr_out_ex              : std_logic_vector (3 downto 0) := (others => '0');
 
     signal lr_write_enable_id  : std_logic                      := '0';
     signal lr_write_enable_ex  : std_logic                      := '0';
@@ -366,7 +375,6 @@ architecture struct of core is
     signal sender_send_id  : std_logic                      := '0';
     signal sender_send_ex  : std_logic                      := '0';
     signal sender_send_mem : std_logic                      := '0';
-    signal sender_in_mem   : std_logic_vector (31 downto 0) := (others => '0');
     signal sender_full     : std_logic                      := '0';
 
     signal recver_recv_id  : std_logic                      := '0';
@@ -393,9 +401,15 @@ architecture struct of core is
     signal ia_src_wb    : std_logic_vector (1 downto 0) := IA_SRC_PC;
     --signal stall    : std_logic                     := '0';
 
-    signal fwd_src1_ex : std_logic_vector (3 downto 0) := (others => '0');
-    signal fwd_src2_ex : std_logic_vector (3 downto 0) := (others => '0');
-    signal fwd_src3_ex : std_logic_vector (3 downto 0) := (others => '0');
+    signal fwd_src_alu1_ex    : std_logic_vector (3 downto 0) := (others => '0');
+    signal fwd_src_alu2_ex    : std_logic_vector (3 downto 0) := (others => '0');
+    signal fwd_src_fpu1_ex    : std_logic_vector (3 downto 0) := (others => '0');
+    signal fwd_src_fpu2_ex    : std_logic_vector (3 downto 0) := (others => '0');
+    signal fwd_src_mem_io_ex  : std_logic_vector (3 downto 0) := (others => '0');
+    signal fwd_src_mem_io_mem : std_logic_vector (1 downto 0) := (others => '0');
+
+    signal gp_cond_id : std_logic_vector (2 downto 0)  := (others => '0');
+    signal fp_cond_id : std_logic_vector (3 downto 0)  := (others => '0');
 
     signal selected_ia  : std_logic_vector (31 downto 0) := (others => '0');
     signal selected_data : std_logic_vector (31 downto 0) := (others => '0');
@@ -416,32 +430,32 @@ begin
     );
 
     cont : control port map (
-        clk               => clk,
-        opcode            => instruction_id(31 downto 26),
-        sub_opcode        => instruction_id(10 downto 1),
-        branch_op         => instruction_id(25 downto 22),
-        cr                => cr_out_mem,
-        sender_full       => sender_full,
-        recver_empty      => recver_empty,
-        gpr_write_enable  => gpr_write_enable_id,
-        fpr_write_enable  => fpr_write_enable_id,
-        dmem_write_enable => dmem_write_enable_id,
-        cr_g_write_enable => cr_g_write_enable_id,
-        cr_f_write_enable => cr_f_write_enable_id,
-        lr_write_enable   => lr_write_enable_id,
-        ctr_write_enable  => ctr_write_enable_id,
-        ext_op            => ext_op_id,
-        alu_op            => alu_op_id,
-        fpu_op            => fpu_op_id,
-        fadd_op           => fadd_op_id,
-        alu_src           => alu_src_id,
-        dmem_src          => dmem_src_id,
-        regs_src          => regs_src_id,
-        lr_src            => lr_src_id,
-        ia_src            => ia_src_id,
-        --stall             => stall,
-        sender_send       => sender_send_id,
-        recver_recv       => recver_recv_id
+        clk                => clk,
+        opcode             => instruction_id(31 downto 26),
+        sub_opcode         => instruction_id(10 downto 1),
+        branch_op          => instruction_id(25 downto 22),
+        cr                 => cr_out_ex,
+        sender_full        => sender_full,
+        recver_empty       => recver_empty,
+        gpr_write_enable   => gpr_write_enable_id,
+        fpr_write_enable   => fpr_write_enable_id,
+        dmem_write_enable  => dmem_write_enable_id,
+        cr_gp_write_enable => cr_gp_write_enable_id,
+        cr_fp_write_enable => cr_fp_write_enable_id,
+        lr_write_enable    => lr_write_enable_id,
+        ctr_write_enable   => ctr_write_enable_id,
+        ext_op             => ext_op_id,
+        alu_op             => alu_op_id,
+        fpu_op             => fpu_op_id,
+        fadd_op            => fadd_op_id,
+        alu_src            => alu_src_id,
+        dmem_src           => dmem_src_id,
+        regs_src           => regs_src_id,
+        lr_src             => lr_src_id,
+        ia_src             => ia_src_id,
+        --stall              => stall,
+        sender_send        => sender_send_id,
+        recver_recv        => recver_recv_id
     );
 
     ext : extend port map (
@@ -480,7 +494,6 @@ begin
         alu_op   => alu_op_ex,
         alu_in1  => alu_in1_ex,
         alu_in2  => alu_in2_ex,
-        alu_cond => alu_cond_ex,
         alu_out  => alu_out_ex
     );
 
@@ -488,7 +501,6 @@ begin
         fpu_op   => fpu_op_ex,
         fpu_in1  => fpu_in1_ex,
         fpu_in2  => fpu_in2_ex,
-        fpu_cond => fpu_cond_ex,
         fpu_out  => fpu_out_ex
     );
 
@@ -517,7 +529,7 @@ begin
         clk               => clk,
         dmem_write_enable => dmem_write_enable_mem,
         dmem_address      => dmem_address_mem,
-        dmem_data_in      => dmem_data_in_mem,
+        dmem_data_in      => mem_io_in_mem2,
         dmem_data_out     => dmem_data_out_mem,
 
         ZD     => ZD,
@@ -537,12 +549,12 @@ begin
     );
 
     cr : condition_register port map (
-        clk               => clk,
-        cr_g_write_enable => cr_g_write_enable_mem,
-        cr_f_write_enable => cr_f_write_enable_mem,
-        cr_in_g           => cr_in_g_mem,
-        cr_in_f           => cr_in_f_mem,
-        cr_out            => cr_out_mem
+        clk                => clk,
+        cr_gp_write_enable => cr_gp_write_enable_ex,
+        cr_fp_write_enable => cr_fp_write_enable_ex,
+        cr_gp_in           => cr_gp_in_ex,
+        cr_fp_in           => cr_fp_in_ex,
+        cr_out             => cr_out_ex
     );
 
     lr : link_register port map (
@@ -562,7 +574,7 @@ begin
     send : sender port map (
         clk         => clk,
         sender_send => sender_send_mem,
-        sender_in   => sender_in_mem,
+        sender_in   => mem_io_in_mem2,
         sender_full => sender_full,
         sender_out  => RS_TX
     );
@@ -576,13 +588,25 @@ begin
     );
 
     fwd : forwarding_unit port map (
-        clk             => clk,
-        instruction_ex  => instruction_ex,
-        instruction_mem => instruction_mem,
-        instruction_wb  => instruction_wb,
-        fwd_src1        => fwd_src1_ex,
-        fwd_src2        => fwd_src2_ex,
-        fwd_src3        => fwd_src3_ex
+        clk                => clk,
+        instruction_ex     => instruction_ex,
+        instruction_mem    => instruction_mem,
+        instruction_wb     => instruction_wb,
+        fwd_src_alu1_ex    => fwd_src_alu1_ex,
+        fwd_src_alu2_ex    => fwd_src_alu2_ex,
+        fwd_src_fpu1_ex    => fwd_src_fpu1_ex,
+        fwd_src_fpu2_ex    => fwd_src_fpu2_ex,
+        fwd_src_mem_io_ex  => fwd_src_mem_io_ex,
+        fwd_src_mem_io_mem => fwd_src_mem_io_mem
+    );
+
+    cmp : compare_unit port map (
+        gp_in1  => gpr_data_out1_id,
+        gp_in2  => gpr_data_out2_id,
+        fp_in1  => fpr_data_out1_id,
+        fp_in2  => fpr_data_out1_id,
+        gp_cond => gp_cond_id,
+        fp_cond => fp_cond_id
     );
 
     -- data path
@@ -610,110 +634,96 @@ begin
     id_ex : process (clk)
     begin
         if rising_edge(clk) then
-            instruction_ex       <= instruction_id;
-            pc_out_ex            <= pc_out_id;
-            ext_out_ex           <= ext_out_id;
-            reg_numw_ex          <= reg_numw_id;
-            gpr_data_out1_ex     <= gpr_data_out1_id;
-            gpr_data_out2_ex     <= gpr_data_out2_id;
-            gpr_data_out3_ex     <= gpr_data_out3_id;
-            fpr_data_out1_ex     <= fpr_data_out1_id;
-            fpr_data_out2_ex     <= fpr_data_out2_id;
-            fpr_data_out3_ex     <= fpr_data_out3_id;
-            gpr_write_enable_ex  <= gpr_write_enable_id;
-            fpr_write_enable_ex  <= fpr_write_enable_id;
-            dmem_write_enable_ex <= dmem_write_enable_id;
-            cr_g_write_enable_ex <= cr_g_write_enable_id;
-            cr_f_write_enable_ex <= cr_f_write_enable_id;
-            lr_write_enable_ex   <= lr_write_enable_id;
-            ctr_write_enable_ex  <= ctr_write_enable_id;
-            alu_op_ex            <= alu_op_id;
-            fpu_op_ex            <= fpu_op_id;
-            fadd_op_ex           <= fadd_op_id;
-            alu_src_ex           <= alu_src_id;
-            dmem_src_ex          <= dmem_src_id;
-            regs_src_ex          <= regs_src_id;
-            ia_src_ex            <= ia_src_id;
-            sender_send_ex       <= sender_send_id;
-            recver_recv_ex       <= recver_recv_id;
+            instruction_ex        <= instruction_id;
+            pc_out_ex             <= pc_out_id;
+            ext_out_ex            <= ext_out_id;
+            reg_numw_ex           <= reg_numw_id;
+            gpr_data_out1_ex      <= gpr_data_out1_id;
+            gpr_data_out2_ex      <= gpr_data_out2_id;
+            gpr_data_out3_ex      <= gpr_data_out3_id;
+            fpr_data_out1_ex      <= fpr_data_out1_id;
+            fpr_data_out2_ex      <= fpr_data_out2_id;
+            fpr_data_out3_ex      <= fpr_data_out3_id;
+            cr_gp_in_ex           <= gp_cond_id;
+            cr_fp_in_ex           <= fp_cond_id;
+            gpr_write_enable_ex   <= gpr_write_enable_id;
+            fpr_write_enable_ex   <= fpr_write_enable_id;
+            dmem_write_enable_ex  <= dmem_write_enable_id;
+            cr_gp_write_enable_ex <= cr_gp_write_enable_id;
+            cr_fp_write_enable_ex <= cr_fp_write_enable_id;
+            lr_write_enable_ex    <= lr_write_enable_id;
+            ctr_write_enable_ex   <= ctr_write_enable_id;
+            alu_op_ex             <= alu_op_id;
+            fpu_op_ex             <= fpu_op_id;
+            fadd_op_ex            <= fadd_op_id;
+            alu_src_ex            <= alu_src_id;
+            dmem_src_ex           <= dmem_src_id;
+            regs_src_ex           <= regs_src_id;
+            ia_src_ex             <= ia_src_id;
+            sender_send_ex        <= sender_send_id;
+            recver_recv_ex        <= recver_recv_id;
         end if;
     end process;
 
     alu_in1_ex <=
-        alu_out_mem  when fwd_src1_ex = FWD_SRC_ALU_MEM  else
-        lr_out_mem   when fwd_src1_ex = FWD_SRC_LR_MEM   else
-        fpu_out_mem  when fwd_src1_ex = FWD_SRC_FPU_MEM  else
-        fadd_out_mem when fwd_src1_ex = FWD_SRC_FADD_MEM else
-        fmul_out_mem when fwd_src1_ex = FWD_SRC_FMUL_MEM else
-        finv_out_mem when fwd_src1_ex = FWD_SRC_FINV_MEM else
-        alu_out_wb   when fwd_src1_ex = FWD_SRC_ALU_WB   else
-        lr_out_wb    when fwd_src1_ex = FWD_SRC_LR_WB    else
-        fpu_out_wb   when fwd_src1_ex = FWD_SRC_FPU_WB   else
-        fadd_out_wb  when fwd_src1_ex = FWD_SRC_FADD_WB  else
-        fmul_out_wb  when fwd_src1_ex = FWD_SRC_FMUL_WB  else
-        finv_out_wb  when fwd_src1_ex = FWD_SRC_FINV_WB  else
+        alu_out_mem  when fwd_src_alu1_ex = FWD_SRC_ALU_MEM  else
+        lr_out_mem   when fwd_src_alu1_ex = FWD_SRC_LR_MEM   else
+        fpu_out_mem  when fwd_src_alu1_ex = FWD_SRC_FPU_MEM  else
+        alu_out_wb   when fwd_src_alu1_ex = FWD_SRC_ALU_WB   else
+        lr_out_wb    when fwd_src_alu1_ex = FWD_SRC_LR_WB    else
+        fpu_out_wb   when fwd_src_alu1_ex = FWD_SRC_FPU_WB   else
         gpr_data_out1_ex;
 
     alu_in2_ex <=
         ext_out_ex   when alu_src_ex  = ALU_SRC_EXT      else
-        alu_out_mem  when fwd_src2_ex = FWD_SRC_ALU_MEM  else
-        lr_out_mem   when fwd_src2_ex = FWD_SRC_LR_MEM   else
-        fpu_out_mem  when fwd_src2_ex = FWD_SRC_FPU_MEM  else
-        fadd_out_mem when fwd_src2_ex = FWD_SRC_FADD_MEM else
-        fmul_out_mem when fwd_src2_ex = FWD_SRC_FMUL_MEM else
-        finv_out_mem when fwd_src2_ex = FWD_SRC_FINV_MEM else
-        alu_out_wb   when fwd_src2_ex = FWD_SRC_ALU_WB   else
-        lr_out_wb    when fwd_src2_ex = FWD_SRC_LR_WB    else
-        fpu_out_wb   when fwd_src2_ex = FWD_SRC_FPU_WB   else
-        fadd_out_wb  when fwd_src2_ex = FWD_SRC_FADD_WB  else
-        fmul_out_wb  when fwd_src2_ex = FWD_SRC_FMUL_WB  else
-        finv_out_wb  when fwd_src2_ex = FWD_SRC_FINV_WB  else
+        alu_out_mem  when fwd_src_alu2_ex = FWD_SRC_ALU_MEM  else
+        lr_out_mem   when fwd_src_alu2_ex = FWD_SRC_LR_MEM   else
+        fpu_out_mem  when fwd_src_alu2_ex = FWD_SRC_FPU_MEM  else
+        alu_out_wb   when fwd_src_alu2_ex = FWD_SRC_ALU_WB   else
+        lr_out_wb    when fwd_src_alu2_ex = FWD_SRC_LR_WB    else
+        fpu_out_wb   when fwd_src_alu2_ex = FWD_SRC_FPU_WB   else
         gpr_data_out2_ex;
 
     fpu_in1_ex <=
-        alu_out_mem  when fwd_src1_ex = FWD_SRC_ALU_MEM  else
-        lr_out_mem   when fwd_src1_ex = FWD_SRC_LR_MEM   else
-        fpu_out_mem  when fwd_src1_ex = FWD_SRC_FPU_MEM  else
-        fadd_out_mem when fwd_src1_ex = FWD_SRC_FADD_MEM else
-        fmul_out_mem when fwd_src1_ex = FWD_SRC_FMUL_MEM else
-        finv_out_mem when fwd_src1_ex = FWD_SRC_FINV_MEM else
-        alu_out_wb   when fwd_src1_ex = FWD_SRC_ALU_WB   else
-        lr_out_wb    when fwd_src1_ex = FWD_SRC_LR_WB    else
-        fpu_out_wb   when fwd_src1_ex = FWD_SRC_FPU_WB   else
-        fadd_out_wb  when fwd_src1_ex = FWD_SRC_FADD_WB  else
-        fmul_out_wb  when fwd_src1_ex = FWD_SRC_FMUL_WB  else
-        finv_out_wb  when fwd_src1_ex = FWD_SRC_FINV_WB  else
+        alu_out_mem  when fwd_src_fpu1_ex = FWD_SRC_ALU_MEM  else
+        fpu_out_mem  when fwd_src_fpu1_ex = FWD_SRC_FPU_MEM  else
+        fadd_out_mem when fwd_src_fpu1_ex = FWD_SRC_FADD_MEM else
+        fmul_out_mem when fwd_src_fpu1_ex = FWD_SRC_FMUL_MEM else
+        finv_out_mem when fwd_src_fpu1_ex = FWD_SRC_FINV_MEM else
+        alu_out_wb   when fwd_src_fpu1_ex = FWD_SRC_ALU_WB   else
+        fpu_out_wb   when fwd_src_fpu1_ex = FWD_SRC_FPU_WB   else
+        fadd_out_wb  when fwd_src_fpu1_ex = FWD_SRC_FADD_WB  else
+        fmul_out_wb  when fwd_src_fpu1_ex = FWD_SRC_FMUL_WB  else
+        finv_out_wb  when fwd_src_fpu1_ex = FWD_SRC_FINV_WB  else
         fpr_data_out1_ex;
 
     fpu_in2_ex <=
-        alu_out_mem  when fwd_src2_ex = FWD_SRC_ALU_MEM  else
-        lr_out_mem   when fwd_src2_ex = FWD_SRC_LR_MEM   else
-        fpu_out_mem  when fwd_src2_ex = FWD_SRC_FPU_MEM  else
-        fadd_out_mem when fwd_src2_ex = FWD_SRC_FADD_MEM else
-        fmul_out_mem when fwd_src2_ex = FWD_SRC_FMUL_MEM else
-        finv_out_mem when fwd_src2_ex = FWD_SRC_FINV_MEM else
-        alu_out_wb   when fwd_src2_ex = FWD_SRC_ALU_WB   else
-        lr_out_wb    when fwd_src2_ex = FWD_SRC_LR_WB    else
-        fpu_out_wb   when fwd_src2_ex = FWD_SRC_FPU_WB   else
-        fadd_out_wb  when fwd_src2_ex = FWD_SRC_FADD_WB  else
-        fmul_out_wb  when fwd_src2_ex = FWD_SRC_FMUL_WB  else
-        finv_out_wb  when fwd_src2_ex = FWD_SRC_FINV_WB  else
+        alu_out_mem  when fwd_src_fpu2_ex = FWD_SRC_ALU_MEM  else
+        fpu_out_mem  when fwd_src_fpu2_ex = FWD_SRC_FPU_MEM  else
+        fadd_out_mem when fwd_src_fpu2_ex = FWD_SRC_FADD_MEM else
+        fmul_out_mem when fwd_src_fpu2_ex = FWD_SRC_FMUL_MEM else
+        finv_out_mem when fwd_src_fpu2_ex = FWD_SRC_FINV_MEM else
+        alu_out_wb   when fwd_src_fpu2_ex = FWD_SRC_ALU_WB   else
+        fpu_out_wb   when fwd_src_fpu2_ex = FWD_SRC_FPU_WB   else
+        fadd_out_wb  when fwd_src_fpu2_ex = FWD_SRC_FADD_WB  else
+        fmul_out_wb  when fwd_src_fpu2_ex = FWD_SRC_FMUL_WB  else
+        finv_out_wb  when fwd_src_fpu2_ex = FWD_SRC_FINV_WB  else
         fpr_data_out2_ex;
 
-    mem_data_in_ex <=
-        alu_out_mem      when fwd_src2_ex = FWD_SRC_ALU_MEM  else
-        lr_out_mem       when fwd_src2_ex = FWD_SRC_LR_MEM   else
-        fpu_out_mem      when fwd_src2_ex = FWD_SRC_FPU_MEM  else
-        fadd_out_mem     when fwd_src2_ex = FWD_SRC_FADD_MEM else
-        fmul_out_mem     when fwd_src2_ex = FWD_SRC_FMUL_MEM else
-        finv_out_mem     when fwd_src2_ex = FWD_SRC_FINV_MEM else
-        alu_out_wb       when fwd_src2_ex = FWD_SRC_ALU_WB   else
-        lr_out_wb        when fwd_src2_ex = FWD_SRC_LR_WB    else
-        fpu_out_wb       when fwd_src2_ex = FWD_SRC_FPU_WB   else
-        fadd_out_wb      when fwd_src2_ex = FWD_SRC_FADD_WB  else
-        fmul_out_wb      when fwd_src2_ex = FWD_SRC_FMUL_WB  else
-        finv_out_wb      when fwd_src2_ex = FWD_SRC_FINV_WB  else
-        fpr_data_out3_ex when fwd_src2_ex = FWD_SRC_REG      and dmem_src_ex = DMEM_SRC_FPR else
+    mem_io_in_ex <=
+        alu_out_mem      when fwd_src_mem_io_ex = FWD_SRC_ALU_MEM  else
+        lr_out_mem       when fwd_src_mem_io_ex = FWD_SRC_LR_MEM   else
+        fpu_out_mem      when fwd_src_mem_io_ex = FWD_SRC_FPU_MEM  else
+        fadd_out_mem     when fwd_src_mem_io_ex = FWD_SRC_FADD_MEM else
+        fmul_out_mem     when fwd_src_mem_io_ex = FWD_SRC_FMUL_MEM else
+        finv_out_mem     when fwd_src_mem_io_ex = FWD_SRC_FINV_MEM else
+        alu_out_wb       when fwd_src_mem_io_ex = FWD_SRC_ALU_WB   else
+        lr_out_wb        when fwd_src_mem_io_ex = FWD_SRC_LR_WB    else
+        fpu_out_wb       when fwd_src_mem_io_ex = FWD_SRC_FPU_WB   else
+        fadd_out_wb      when fwd_src_mem_io_ex = FWD_SRC_FADD_WB  else
+        fmul_out_wb      when fwd_src_mem_io_ex = FWD_SRC_FMUL_WB  else
+        finv_out_wb      when fwd_src_mem_io_ex = FWD_SRC_FINV_WB  else
+        fpr_data_out3_ex when fwd_src_mem_io_ex = FWD_SRC_REG      and dmem_src_ex = DMEM_SRC_FPR else
         gpr_data_out3_ex;
 
     ex_mem : process (clk)
@@ -722,8 +732,6 @@ begin
             instruction_mem       <= instruction_ex;
             pc_out_mem            <= pc_out_ex;
             reg_numw_mem          <= reg_numw_ex;
-            cr_in_g_mem           <= alu_cond_ex;
-            cr_in_f_mem           <= fpu_cond_ex;
             ctr_in_mem            <= alu_out_ex;
             ext_out_mem           <= ext_out_ex;
             alu_out_mem           <= alu_out_ex;
@@ -732,13 +740,10 @@ begin
             fmul_out_mem          <= fmul_out_ex;
             finv_out_mem          <= finv_out_ex;
             dmem_address_mem      <= alu_out_ex(19 downto 0);
-            dmem_data_in_mem      <= mem_data_in_ex;
-            sender_in_mem         <= mem_data_in_ex;
+            mem_io_in_mem1        <= mem_io_in_ex;
             gpr_write_enable_mem  <= gpr_write_enable_ex;
             fpr_write_enable_mem  <= fpr_write_enable_ex;
             dmem_write_enable_mem <= dmem_write_enable_ex;
-            cr_g_write_enable_mem <= cr_g_write_enable_ex;
-            cr_f_write_enable_mem <= cr_f_write_enable_ex;
             lr_write_enable_mem   <= lr_write_enable_ex;
             ctr_write_enable_mem  <= ctr_write_enable_ex;
             regs_src_mem          <= regs_src_ex;
@@ -749,6 +754,11 @@ begin
     end process;
 
     lr_in_mem <= alu_out_mem when lr_src_mem = LR_SRC_ALU else pc_out_mem;
+
+    mem_io_in_mem2 <=
+        dmem_data_out_wb when fwd_src_mem_io_mem = FWD_SRC_DMEM_WB else
+        recver_out_wb    when fwd_src_mem_io_mem = FWD_SRC_RECV_WB else
+        mem_io_in_mem1;
 
     mem_wb : process (clk)
     begin
@@ -772,14 +782,15 @@ begin
         end if;
     end process;
 
-    selected_data <= alu_out_wb       when regs_src_wb = REGS_SRC_ALU  else
-                     dmem_data_out_wb when regs_src_wb = REGS_SRC_DMEM else
-                     lr_out_wb        when regs_src_wb = REGS_SRC_LR   else
-                     recver_out_wb    when regs_src_wb = REGS_SRC_RECV else
-                     fpu_out_wb       when regs_src_wb = REGS_SRC_FPU  else
-                     fadd_out_wb      when regs_src_wb = REGS_SRC_FADD else
-                     fmul_out_wb      when regs_src_wb = REGS_SRC_FMUL else
-                     finv_out_wb;
+    selected_data <=
+        alu_out_wb       when regs_src_wb = REGS_SRC_ALU  else
+        dmem_data_out_wb when regs_src_wb = REGS_SRC_DMEM else
+        lr_out_wb        when regs_src_wb = REGS_SRC_LR   else
+        recver_out_wb    when regs_src_wb = REGS_SRC_RECV else
+        fpu_out_wb       when regs_src_wb = REGS_SRC_FPU  else
+        fadd_out_wb      when regs_src_wb = REGS_SRC_FADD else
+        fmul_out_wb      when regs_src_wb = REGS_SRC_FMUL else
+        finv_out_wb;
 
     gpr_data_in_wb  <= selected_data;
     fpr_data_in_wb  <= selected_data;

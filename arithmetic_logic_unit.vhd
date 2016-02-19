@@ -9,19 +9,9 @@ entity arithmetic_logic_unit is
 		alu_op   : in  std_logic_vector (2 downto 0);
 		alu_in1  : in  std_logic_vector (31 downto 0);
 		alu_in2  : in  std_logic_vector (31 downto 0);
-		alu_cond : out std_logic_vector (2 downto 0);
 		alu_out  : out std_logic_vector (31 downto 0)
 	);
 end arithmetic_logic_unit;
-
--- alu_op
--- 000 : add
--- 001 : neg
--- 010 : and
--- 011 : or
--- 100 : sl
--- 101 : sr
--- 110 : cmp
 
 architecture struct of arithmetic_logic_unit is
 begin
@@ -31,16 +21,12 @@ begin
 		case alu_op is
 		when ALU_OP_ADD =>
 			alu_out  <= alu_in1 + alu_in2;
-			alu_cond <= "000";
 		when ALU_OP_NEG =>
 			alu_out  <= (not alu_in1) + 1;
-			alu_cond <= "000";
 		when ALU_OP_AND =>
 			alu_out <= alu_in1 and alu_in2;
-			alu_cond <= "000";
 		when ALU_OP_OR =>
 			alu_out <= alu_in1 or alu_in2;
-			alu_cond <= "000";
 		when ALU_OP_SL =>
 			case alu_in2(4 downto 0) is
 			when "00000" => alu_out <= alu_in1;
@@ -77,7 +63,6 @@ begin
 			when "11111" => alu_out <= alu_in1( 0 downto 0) & "0000000000000000000000000000000";
 			when others  => alu_out <= alu_in1;
 			end case;
-			alu_cond <= "000";
 		when ALU_OP_SR =>
 			case alu_in2(4 downto 0) is
 			when "00000" => alu_out <= alu_in1;
@@ -114,19 +99,8 @@ begin
 			when "11111" => alu_out <= "0000000000000000000000000000000" & alu_in1(31 downto 31);
 			when others  => alu_out <= alu_in1;
 			end case;
-			alu_cond <= "000";
-		when ALU_OP_CMP =>
-			alu_out <= alu_in1;
-			if ((alu_in1(31) = alu_in2(31) and alu_in1(30 downto 0) < alu_in2(30 downto 0)) or (alu_in1(31) = '1' and alu_in2(31) = '0')) then
-				alu_cond <= COND_LT;	-- alu_in1 < alu_in2
-			elsif ((alu_in1(31) = alu_in2(31) and alu_in1(30 downto 0) > alu_in2(30 downto 0)) or (alu_in1(31) = '0' and alu_in2(31) = '1')) then
-				alu_cond <= COND_GT;	-- alu_in1 > alu_in2
-			else
-				alu_cond <= COND_EQ;	-- alu_in1 = alu_in2
-			end if;
 		when others =>
 			alu_out <= alu_in1;
-			alu_cond <= "000";
  		end case;
 	end process;
 

@@ -48,8 +48,8 @@
 cp ../../../block_ram.mif .
 rm -rf simv* csrc DVEfiles AN.DB
 
-echo "Compiling Core VHDL UNISIM/Behavioral model"
-vhdlan  ../../../block_ram.vhd
+echo "Compiling Core Verilog UNISIM/Behavioral model"
+vlogan +v2k  ../../../block_ram.v
 vhdlan  ../../example_design/block_ram_exdes.vhd
 
 echo "Compiling Test Bench Files"
@@ -60,7 +60,8 @@ vhdlan    ../block_ram_synth.vhd
 vhdlan    ../block_ram_tb.vhd
 
 echo "Elaborating Design"
-vcs +vcs+lic+wait -debug block_ram_tb
+vlogan +v2k $XILINX/verilog/src/glbl.v
+vcs +vcs+lic+wait -debug block_ram_tb glbl
 
 echo "Simulating Design"
 ./simv -ucli -i ucli_commands.key

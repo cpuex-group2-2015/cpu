@@ -13,6 +13,7 @@ entity control is
 		cr                 : in  std_logic_vector (3 downto 0);
 		sender_full        : in  std_logic;
 		recver_empty       : in  std_logic;
+        pc_write_enable    : out std_logic                     := '1';
 		gpr_write_enable   : out std_logic                     := '0';
 		fpr_write_enable   : out std_logic                     := '0';
 		dmem_write_enable  : out std_logic                     := '0';
@@ -40,6 +41,23 @@ architecture struct of control is
 	signal wait_count : std_logic_vector(2 downto 0) := (others => '0');
 
 begin
+
+	pc_write_enable <= '0'
+		when (opcode = OP_SEND and sender_full = '1')
+		or   (opcode = OP_RECV and recver_empty = '1')
+		or (wait_count /= "100"	-- 5clk instructions
+			and (opcode = OP_FP
+				and (sub_opcode = SUB_OP_FADD
+				or   sub_opcode = SUB_OP_FSUB
+				or   sub_opcode = SUB_OP_FMUL
+				or   sub_opcode = SUB_OP_FINV)))
+		or (wait_count /= "010"	-- 3clk instructions
+			and (opcode = OP_LD
+			or   opcode = OP_LDF
+			or  (opcode = OP_3OP
+				and (sub_opcode = SUB_OP_LDX
+				or   sub_opcode = SUB_OP_LDFX))))
+		else '1';
 
 	gpr_write_enable <= '1'
 		when   (opcode = OP_RECV
@@ -278,10 +296,14 @@ begin
 				or   sub_opcode = SUB_OP_FINV)))
 		or (wait_count /= "010"	-- 3clk instructions
 			and (opcode = OP_LD
+			or   opcode = OP_ST
 			or   opcode = OP_LDF
+			or   opcode = OP_STF
 			or  (opcode = OP_3OP
 				and (sub_opcode = SUB_OP_LDX
-				or   sub_opcode = SUB_OP_LDFX))))
+				or   sub_opcode = SUB_OP_LDFX
+				or   sub_opcode = SUB_OP_STX
+				or   sub_opcode = SUB_OP_STFX))))
 		else '0';
 
 	process (clk, opcode, sub_opcode, branch_op, cr)
@@ -301,10 +323,14 @@ begin
 				end if;
 			-- 3clk instructions
 		elsif (opcode = OP_LD
+			    or   opcode = OP_ST
 				or   opcode = OP_LDF
+			    or   opcode = OP_STF
 				or  (opcode = OP_3OP
 					and (sub_opcode = SUB_OP_LDX
-					or   sub_opcode = SUB_OP_LDFX))) then
+					or   sub_opcode = SUB_OP_LDFX
+				    or   sub_opcode = SUB_OP_STX
+				    or   sub_opcode = SUB_OP_STFX))) then
 
 				if (wait_count = "010") then
 						wait_count <= "000";

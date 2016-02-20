@@ -50,8 +50,8 @@ fifo8_send.asy
 fifo8_send.gise
 fifo8_send.ngc
 fifo8_send.sym
-fifo8_send.v
-fifo8_send.veo
+fifo8_send.vhd
+fifo8_send.vho
 fifo8_send.xco
 fifo8_send.xise
 fifo8_send_flist.txt

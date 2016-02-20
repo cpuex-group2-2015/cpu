@@ -30,9 +30,10 @@ architecture struct of core is
 
     component program_counter is
         port (
-            clk    : in  std_logic;
-            pc_in  : in  std_logic_vector (31 downto 0);
-            pc_out : out std_logic_vector (31 downto 0)
+            clk             : in  std_logic;
+            pc_write_enable : in  std_logic;
+            pc_in           : in  std_logic_vector (31 downto 0);
+            pc_out          : out std_logic_vector (31 downto 0)
         );
     end component;
 
@@ -53,6 +54,7 @@ architecture struct of core is
             cr                 : in  std_logic_vector (3 downto 0);
             sender_full        : in  std_logic;
             recver_empty       : in  std_logic;
+            pc_write_enable    : out std_logic;
             gpr_write_enable   : out std_logic;
             fpr_write_enable   : out std_logic;
             dmem_write_enable  : out std_logic;
@@ -258,11 +260,12 @@ architecture struct of core is
         );
     end component;
 
-    signal pc_in_if   : std_logic_vector (31 downto 0) := (others => '0');
-    signal pc_out_if  : std_logic_vector (31 downto 0) := (others => '0');
-    signal pc_out_id  : std_logic_vector (31 downto 0) := (others => '0');
-    signal pc_out_ex  : std_logic_vector (31 downto 0) := (others => '0');
-    signal pc_out_mem : std_logic_vector (31 downto 0) := (others => '0');
+    signal pc_write_enable    : std_logic                      := '1';
+    signal pc_in_if           : std_logic_vector (31 downto 0) := (others => '0');
+    signal pc_out_if          : std_logic_vector (31 downto 0) := (others => '0');
+    signal pc_out_id          : std_logic_vector (31 downto 0) := (others => '0');
+    signal pc_out_ex          : std_logic_vector (31 downto 0) := (others => '0');
+    signal pc_out_mem         : std_logic_vector (31 downto 0) := (others => '0');
 
     signal instruction_address_if : std_logic_vector (31 downto 0) := (others => '0');
     signal instruction_id         : std_logic_vector (31 downto 0) := (others => '0');
@@ -399,7 +402,7 @@ architecture struct of core is
     signal ia_src_ex    : std_logic_vector (1 downto 0) := IA_SRC_PC;
     signal ia_src_mem   : std_logic_vector (1 downto 0) := IA_SRC_PC;
     signal ia_src_wb    : std_logic_vector (1 downto 0) := IA_SRC_PC;
-    --signal stall    : std_logic                     := '0';
+    signal stall        : std_logic                     := '0';
 
     signal fwd_src_alu1_ex    : std_logic_vector (3 downto 0) := (others => '0');
     signal fwd_src_alu2_ex    : std_logic_vector (3 downto 0) := (others => '0');
@@ -418,9 +421,10 @@ begin
 
     -- port map
     pc : program_counter port map (
-        clk    => clk,
-        pc_in  => pc_in_if,
-        pc_out => pc_out_if
+        clk             => clk,
+        pc_write_enable => pc_write_enable,
+        pc_in           => pc_in_if,
+        pc_out          => pc_out_if
     );
 
     imem : instruction_memory port map (
@@ -437,6 +441,7 @@ begin
         cr                 => cr_out_ex,
         sender_full        => sender_full,
         recver_empty       => recver_empty,
+        pc_write_enable    => pc_write_enable,
         gpr_write_enable   => gpr_write_enable_id,
         fpr_write_enable   => fpr_write_enable_id,
         dmem_write_enable  => dmem_write_enable_id,
@@ -453,7 +458,7 @@ begin
         regs_src           => regs_src_id,
         lr_src             => lr_src_id,
         ia_src             => ia_src_id,
-        --stall              => stall,
+        stall              => stall,
         sender_send        => sender_send_id,
         recver_recv        => recver_recv_id
     );
@@ -611,12 +616,25 @@ begin
 
     -- data path
 
-    pc_in_if <= instruction_address_if + 1;
+    pc_in_if <=
+        pc_out_if  + 1 when ia_src_wb = IA_SRC_PC  and stall = '0' else
+        lr_out_wb  + 1 when ia_src_wb = IA_SRC_LR  and stall = '0' else
+        ctr_out_wb + 1 when ia_src_wb = IA_SRC_CTR and stall = '0' else
+        ext_out_wb + 1 when ia_src_wb = IA_SRC_EXT and stall = '0' else
+        pc_out_if      when ia_src_wb = IA_SRC_PC  and stall = '1' else
+        lr_out_wb      when ia_src_wb = IA_SRC_LR  and stall = '1' else
+        ctr_out_wb     when ia_src_wb = IA_SRC_CTR and stall = '1' else
+        ext_out_wb;
 
-    instruction_address_if <= pc_out_if  when ia_src_wb = IA_SRC_PC else
-                              lr_out_wb  when ia_src_wb = IA_SRC_LR else
-                              ctr_out_wb when ia_src_wb = IA_SRC_CTR else
-                              ext_out_wb;
+    instruction_address_if <=
+        pc_out_if      when ia_src_wb = IA_SRC_PC  and stall = '0' else
+        lr_out_wb      when ia_src_wb = IA_SRC_LR  and stall = '0' else
+        ctr_out_wb     when ia_src_wb = IA_SRC_CTR and stall = '0' else
+        ext_out_wb     when ia_src_wb = IA_SRC_EXT and stall = '0' else
+        pc_out_if  - 1 when ia_src_wb = IA_SRC_PC  and stall = '1' else
+        lr_out_wb  - 1 when ia_src_wb = IA_SRC_LR  and stall = '1' else
+        ctr_out_wb - 1 when ia_src_wb = IA_SRC_CTR and stall = '1' else
+        ext_out_wb - 1;
 
     if_id : process (clk)
     begin

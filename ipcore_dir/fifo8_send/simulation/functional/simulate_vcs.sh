@@ -47,8 +47,8 @@
 #--------------------------------------------------------------------------------
 rm -rf simv* csrc DVEfiles AN.DB
 
-echo "Compiling Core Verilog UNISIM/Behavioral model"
-vlogan +v2k  ../../../fifo8_send.v
+echo "Compiling Core VHDL UNISIM/Behavioral model"
+vhdlan  ../../../fifo8_send.vhd
 vhdlan  ../../example_design/fifo8_send_exdes.vhd
 
 echo "Compiling Test Bench Files"
@@ -61,8 +61,7 @@ vhdlan   ../fifo8_send_synth.vhd
 vhdlan   ../fifo8_send_tb.vhd
 
 echo "Elaborating Design"
-vlogan +v2k $XILINX/verilog/src/glbl.v
-vcs -time_res 1ps +vcs+lic+wait -debug fifo8_send_tb glbl
+vcs -time_res 1ps +vcs+lic+wait -debug fifo8_send_tb
 
 echo "Simulating Design"
 ./simv -ucli -i ucli_commands.key

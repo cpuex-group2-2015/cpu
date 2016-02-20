@@ -23,6 +23,8 @@ xilinx.ini
 webtalk_impact.xml
 xilinxsim.ini
 
+.cxl.mti_se.version
+compxlib.cfg
 
 # https://github.com/github/gitignore/blob/master/Global/XilinxISE.gitignore
 # intermediate build files

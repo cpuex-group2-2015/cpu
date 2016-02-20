@@ -47,8 +47,8 @@ block_ram.gise
 block_ram.mif
 block_ram.ngc
 block_ram.sym
-block_ram.v
-block_ram.veo
+block_ram.vhd
+block_ram.vho
 block_ram.xco
 block_ram.xise
 block_ram_flist.txt

@@ -364,16 +364,18 @@ architecture struct of core is
     signal lr_write_enable_id  : std_logic                      := '0';
     signal lr_write_enable_ex  : std_logic                      := '0';
     signal lr_write_enable_mem : std_logic                      := '0';
-    signal lr_in_mem           : std_logic_vector (31 downto 0) := (others => '0');
+    signal lr_write_enable_wb  : std_logic                      := '0';
+    signal lr_in_id            : std_logic_vector (31 downto 0) := (others => '0');
+    signal lr_out_id           : std_logic_vector (31 downto 0) := (others => '0');
     signal lr_out_mem          : std_logic_vector (31 downto 0) := (others => '0');
     signal lr_out_wb           : std_logic_vector (31 downto 0) := (others => '0');
 
     signal ctr_write_enable_id  : std_logic                      := '0';
     signal ctr_write_enable_ex  : std_logic                      := '0';
     signal ctr_write_enable_mem : std_logic                      := '0';
-    signal ctr_in_mem           : std_logic_vector (31 downto 0) := (others => '0');
-    signal ctr_out_mem          : std_logic_vector (31 downto 0) := (others => '0');
-    signal ctr_out_wb           : std_logic_vector (31 downto 0) := (others => '0');
+    signal ctr_write_enable_wb  : std_logic                      := '0';
+    signal ctr_in_id            : std_logic_vector (31 downto 0) := (others => '0');
+    signal ctr_out_id           : std_logic_vector (31 downto 0) := (others => '0');
 
     signal sender_send_id  : std_logic                      := '0';
     signal sender_send_ex  : std_logic                      := '0';
@@ -399,9 +401,6 @@ architecture struct of core is
     signal lr_src_ex    : std_logic                     := LR_SRC_PC;
     signal lr_src_mem   : std_logic                     := LR_SRC_PC;
     signal ia_src_id    : std_logic_vector (1 downto 0) := IA_SRC_PC;
-    signal ia_src_ex    : std_logic_vector (1 downto 0) := IA_SRC_PC;
-    signal ia_src_mem   : std_logic_vector (1 downto 0) := IA_SRC_PC;
-    signal ia_src_wb    : std_logic_vector (1 downto 0) := IA_SRC_PC;
     signal stall        : std_logic                     := '0';
 
     signal fwd_src_alu1_ex    : std_logic_vector (3 downto 0) := (others => '0');
@@ -564,16 +563,16 @@ begin
 
     lr : link_register port map (
         clk             => clk,
-        lr_write_enable => lr_write_enable_mem,
-        lr_in           => lr_in_mem,
-        lr_out          => lr_out_mem
+        lr_write_enable => lr_write_enable_wb,
+        lr_in           => lr_in_id,
+        lr_out          => lr_out_id
     );
 
     ctr : count_register port map (
         clk              => clk,
-        ctr_write_enable => ctr_write_enable_mem,
-        ctr_in           => ctr_in_mem,
-        ctr_out          => ctr_out_mem
+        ctr_write_enable => ctr_write_enable_id,
+        ctr_in           => gpr_data_out1_id,
+        ctr_out          => ctr_out_id
     );
 
     send : sender port map (
@@ -617,24 +616,24 @@ begin
     -- data path
 
     pc_in_if <=
-        pc_out_if  + 1 when ia_src_wb = IA_SRC_PC  and stall = '0' else
-        lr_out_wb  + 1 when ia_src_wb = IA_SRC_LR  and stall = '0' else
-        ctr_out_wb + 1 when ia_src_wb = IA_SRC_CTR and stall = '0' else
-        ext_out_wb + 1 when ia_src_wb = IA_SRC_EXT and stall = '0' else
-        pc_out_if      when ia_src_wb = IA_SRC_PC  and stall = '1' else
-        lr_out_wb      when ia_src_wb = IA_SRC_LR  and stall = '1' else
-        ctr_out_wb     when ia_src_wb = IA_SRC_CTR and stall = '1' else
-        ext_out_wb;
+        pc_out_if  + 1 when ia_src_id = IA_SRC_PC  and stall = '0' else
+        lr_out_id  + 1 when ia_src_id = IA_SRC_LR  and stall = '0' else
+        ctr_out_id + 1 when ia_src_id = IA_SRC_CTR and stall = '0' else
+        ext_out_id + 1 when ia_src_id = IA_SRC_EXT and stall = '0' else
+        pc_out_if      when ia_src_id = IA_SRC_PC  and stall = '1' else
+        lr_out_id      when ia_src_id = IA_SRC_LR  and stall = '1' else
+        ctr_out_id     when ia_src_id = IA_SRC_CTR and stall = '1' else
+        ext_out_id;
 
     instruction_address_if <=
-        pc_out_if      when ia_src_wb = IA_SRC_PC  and stall = '0' else
-        lr_out_wb      when ia_src_wb = IA_SRC_LR  and stall = '0' else
-        ctr_out_wb     when ia_src_wb = IA_SRC_CTR and stall = '0' else
-        ext_out_wb     when ia_src_wb = IA_SRC_EXT and stall = '0' else
-        pc_out_if  - 1 when ia_src_wb = IA_SRC_PC  and stall = '1' else
-        lr_out_wb  - 1 when ia_src_wb = IA_SRC_LR  and stall = '1' else
-        ctr_out_wb - 1 when ia_src_wb = IA_SRC_CTR and stall = '1' else
-        ext_out_wb - 1;
+        pc_out_if      when ia_src_id = IA_SRC_PC  and stall = '0' else
+        lr_out_id      when ia_src_id = IA_SRC_LR  and stall = '0' else
+        ctr_out_id     when ia_src_id = IA_SRC_CTR and stall = '0' else
+        ext_out_id     when ia_src_id = IA_SRC_EXT and stall = '0' else
+        pc_out_if  - 1 when ia_src_id = IA_SRC_PC  and stall = '1' else
+        lr_out_id  - 1 when ia_src_id = IA_SRC_LR  and stall = '1' else
+        ctr_out_id - 1 when ia_src_id = IA_SRC_CTR and stall = '1' else
+        ext_out_id - 1;
 
     if_id : process (clk)
     begin
@@ -677,7 +676,6 @@ begin
             alu_src_ex            <= alu_src_id;
             dmem_src_ex           <= dmem_src_id;
             regs_src_ex           <= regs_src_id;
-            ia_src_ex             <= ia_src_id;
             sender_send_ex        <= sender_send_id;
             recver_recv_ex        <= recver_recv_id;
         end if;
@@ -750,7 +748,6 @@ begin
             instruction_mem       <= instruction_ex;
             pc_out_mem            <= pc_out_ex;
             reg_numw_mem          <= reg_numw_ex;
-            ctr_in_mem            <= alu_out_ex;
             ext_out_mem           <= ext_out_ex;
             alu_out_mem           <= alu_out_ex;
             fpu_out_mem           <= fpu_out_ex;
@@ -765,13 +762,12 @@ begin
             lr_write_enable_mem   <= lr_write_enable_ex;
             ctr_write_enable_mem  <= ctr_write_enable_ex;
             regs_src_mem          <= regs_src_ex;
-            ia_src_mem            <= ia_src_ex;
             sender_send_mem       <= sender_send_ex;
             recver_recv_mem       <= recver_recv_ex;
         end if;
     end process;
 
-    lr_in_mem <= alu_out_mem when lr_src_mem = LR_SRC_ALU else pc_out_mem;
+    lr_in_id <= alu_out_mem when lr_src_mem = LR_SRC_ALU else pc_out_mem;
 
     mem_io_in_mem2 <=
         dmem_data_out_wb when fwd_src_mem_io_mem = FWD_SRC_DMEM_WB else
@@ -784,7 +780,6 @@ begin
             instruction_wb      <= instruction_mem;
             reg_numw_wb         <= reg_numw_mem;
             lr_out_wb           <= lr_out_mem;
-            ctr_out_wb          <= ctr_out_mem;
             ext_out_wb          <= ext_out_mem;
             alu_out_wb          <= alu_out_mem;
             dmem_data_out_wb    <= dmem_data_out_mem;
@@ -795,8 +790,8 @@ begin
             finv_out_wb         <= finv_out_mem;
             gpr_write_enable_wb <= gpr_write_enable_mem;
             fpr_write_enable_wb <= fpr_write_enable_mem;
+            ctr_write_enable_wb <= ctr_write_enable_mem;
             regs_src_wb         <= regs_src_mem;
-            ia_src_wb           <= ia_src_mem;
         end if;
     end process;
 

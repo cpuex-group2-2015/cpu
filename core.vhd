@@ -76,7 +76,7 @@ architecture struct of core is
         port (
             clk                : in  std_logic;
             cache_write_enable : in  std_logic;
-            cache_address      : in  std_logic_vector (19 downto 0);
+            cache_address      : in  std_logic_vector (17 downto 0);
             cache_data_in      : in  std_logic_vector (31 downto 0);
             cache_data_out     : out std_logic_vector (31 downto 0);
             cache_hit_miss     : out std_logic
@@ -272,7 +272,7 @@ architecture struct of core is
 	signal fpr_data_out3    : std_logic_vector (31 downto 0) := (others => '0');
 
     signal cache_write_enable : std_logic                      := '0';
-    signal cache_address      : std_logic_vector (19 downto 0) := (others => '0');
+    signal cache_address      : std_logic_vector (17 downto 0) := (others => '0');
     signal cache_data_in      : std_logic_vector (31 downto 0) := (others => '0');
     signal cache_data_out     : std_logic_vector (31 downto 0) := (others => '0');
     signal cache_hit_miss     : std_logic                      := '0';
@@ -385,7 +385,7 @@ begin
     cache : cache_memory port map (
         clk                => clk,
         cache_write_enable => cache_write_enable,
-        cache_address      => dmem_address,
+        cache_address      => dmem_address(19 downto 2),
         cache_data_in      => dmem_data_in,
         cache_data_out     => cache_data_out,
         cache_hit_miss     => cache_hit_miss

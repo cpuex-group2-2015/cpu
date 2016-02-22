@@ -6,7 +6,7 @@ entity cache_memory is
 	port (
 		clk                : in  std_logic;
 		cache_write_enable : in  std_logic;
-		cache_address      : in  std_logic_vector (19 downto 0);
+		cache_address      : in  std_logic_vector (17 downto 0);
 		cache_data_in      : in  std_logic_vector (31 downto 0);
 		cache_data_out     : out std_logic_vector (31 downto 0);
 		cache_hit_miss     : out std_logic := '0'
@@ -20,8 +20,8 @@ architecture struct of cache_memory is
 			clka  : in  std_logic;
 			wea   : in  std_logic_vector (0 downto 0);
 			addra : in  std_logic_vector (7 downto 0);
-			dina  : in  std_logic_vector (11 downto 0);
-			douta : out std_logic_vector (11 downto 0)
+			dina  : in  std_logic_vector (9 downto 0);
+			douta : out std_logic_vector (9 downto 0)
 		);
 	end component;
 
@@ -35,8 +35,8 @@ architecture struct of cache_memory is
 		);
 	end component;
 
-	signal tag1 : std_logic_vector (11 downto 0);
-	signal tag2 : std_logic_vector (11 downto 0);
+	signal tag1 : std_logic_vector (9 downto 0);
+	signal tag2 : std_logic_vector (9 downto 0);
 
 	signal index : std_logic_vector (7 downto 0);
 
@@ -49,7 +49,7 @@ begin
 		clka   => clk,
 		wea(0) => cache_write_enable,
 		addra  => cache_address(7 downto 0),
-		dina   => cache_address(19 downto 8),
+		dina   => cache_address(17 downto 8),
 		douta  => tag2
 	);
 
@@ -66,7 +66,7 @@ begin
 	process (clk)
 	begin
 		if (rising_edge(clk)) then
-			tag1  <= cache_address(19 downto 8);
+			tag1  <= cache_address(17 downto 8);
 			index <= cache_address(7 downto 0);
 
 			if cache_write_enable = '1' then

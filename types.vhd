@@ -76,14 +76,15 @@ package types is
     constant DMEM_SRC_GPR : std_logic := '0';
     constant DMEM_SRC_FPR : std_logic := '1';
 
-    constant REGS_SRC_ALU  : std_logic_vector (2 downto 0) := "000";
-    constant REGS_SRC_DMEM : std_logic_vector (2 downto 0) := "001";
-    constant REGS_SRC_LR   : std_logic_vector (2 downto 0) := "010";
-    constant REGS_SRC_RECV : std_logic_vector (2 downto 0) := "011";
-    constant REGS_SRC_FPU  : std_logic_vector (2 downto 0) := "100";
-    constant REGS_SRC_FADD : std_logic_vector (2 downto 0) := "101";
-    constant REGS_SRC_FMUL : std_logic_vector (2 downto 0) := "110";
-    constant REGS_SRC_FINV : std_logic_vector (2 downto 0) := "111";
+    constant REGS_SRC_ALU   : std_logic_vector (3 downto 0) := "0000";
+    constant REGS_SRC_CACHE : std_logic_vector (3 downto 0) := "0001";
+    constant REGS_SRC_DMEM  : std_logic_vector (3 downto 0) := "0010";
+    constant REGS_SRC_LR    : std_logic_vector (3 downto 0) := "0011";
+    constant REGS_SRC_RECV  : std_logic_vector (3 downto 0) := "0100";
+    constant REGS_SRC_FPU   : std_logic_vector (3 downto 0) := "0101";
+    constant REGS_SRC_FADD  : std_logic_vector (3 downto 0) := "0110";
+    constant REGS_SRC_FMUL  : std_logic_vector (3 downto 0) := "0111";
+    constant REGS_SRC_FINV  : std_logic_vector (3 downto 0) := "1000";
 
     constant LR_SRC_PC  : std_logic := '0';
     constant LR_SRC_ALU : std_logic := '1';
@@ -93,29 +94,29 @@ package types is
     constant IA_SRC_CTR : std_logic_vector (1 downto 0) := "10";
     constant IA_SRC_EXT : std_logic_vector (1 downto 0) := "11";
 
-    -- -- 9600, 66MHz
-    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"1B16";
-    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"1B16";
-    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0D8B";
-    --
-    -- -- 115200, 66MHz
-    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"0242";
-    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0242";
-    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0121";
-    --
-    -- -- 115200, 77MHz
-    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"02AF";
-    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0290";
-    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0148";
+    ---- 9600, 66MHz
+    --constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"1B16";
+    --constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"1B16";
+    --constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0D8B";
+
+    ---- 115200, 66MHz
+    --constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"0242";
+    --constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0242";
+    --constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0121";
+
+    ---- 115200, 77MHz
+    --constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"02AF";
+    --constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0290";
+    --constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0148";
 
     -- 115200, 88MHz
     constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"02FF";
     constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"02F0";
     constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"0178";
 
-    -- -- 115200, 99MHz
-    -- constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"0360";
-    -- constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0350";
-    -- constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"01A8";
+    ---- 115200, 99MHz
+    --constant WTIME_SEND      : std_logic_vector (15 downto 0) := x"0360";
+    --constant WTIME_RECV      : std_logic_vector (15 downto 0) := x"0350";
+    --constant WTIME_RECV_HALF : std_logic_vector (15 downto 0) := x"01A8";
 
 end package;

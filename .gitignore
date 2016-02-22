@@ -1,11 +1,30 @@
 tools
 _xmsgs
-*.log
-*.cmd
 modelsim.ini
 *.fdo
 *.udo
 out.txt
+isim/
+*.xmsgs
+*.swp
+xilinx.ini
+
+*.cmd
+*.exe
+*.ipf
+*.log
+*.tcl
+*.wdb
+*.wcfg
+*.xdl
+*.xsl
+*_envsettings.html
+*_pad.txt
+webtalk_impact.xml
+xilinxsim.ini
+
+.cxl.mti_se.version
+compxlib.cfg
 
 # https://github.com/github/gitignore/blob/master/Global/XilinxISE.gitignore
 # intermediate build files

@@ -27,6 +27,7 @@ entity control is
 		fpu_op             : out std_logic_vector (1 downto 0) := FPU_OP_BYPASS;
 		fadd_op            : out std_logic                     := FADD_OP_ADD;
 		alu_src            : out std_logic                     := ALU_SRC_GPR;
+		cache_src          : out std_logic                     := CACHE_SRC_ST;
 		dmem_src           : out std_logic                     := DMEM_SRC_GPR;
 		regs_src           : out std_logic_vector (3 downto 0) := REGS_SRC_ALU;
 		lr_src             : out std_logic                     := LR_SRC_PC;
@@ -39,7 +40,7 @@ end control;
 
 architecture struct of control is
 
-	signal wait_count : std_logic_vector(2 downto 0) := (others => '0');
+	signal wait_count : std_logic_vector(1 downto 0) := (others => '0');
 
 begin
 
@@ -78,13 +79,18 @@ begin
 		else '0';
 
 	cache_write_enable <= '1'
-		when   (opcode = OP_ST
-			or  opcode = OP_STF
-			or (opcode = OP_3OP
+		when    (opcode = OP_ST
+			or   opcode = OP_STF
+			or  (opcode = OP_3OP
 				and (sub_opcode = SUB_OP_STX
 				or   sub_opcode = SUB_OP_STFX)))
+			or (wait_count = "10"
+			and (opcode = OP_LD
+			or   opcode = OP_LDF
+			or  (opcode = OP_3OP
+				and (sub_opcode = SUB_OP_LDX
+				or   sub_opcode = SUB_OP_LDFX))))
 		else '0';
-
 
 	dmem_write_enable <= '1'
 		when   (opcode = OP_ST
@@ -214,6 +220,22 @@ begin
 			or  opcode = OP_CMPI)
 		else '-';
 
+	cache_src <= CACHE_SRC_ST
+			when   (opcode = OP_SEND
+				or  opcode = OP_ST
+				or  opcode = OP_STF
+				or (opcode = OP_3OP
+					and (sub_opcode = SUB_OP_STX
+					or   sub_opcode = SUB_OP_STFX)))
+		else CACHE_SRC_LD
+			when wait_count = "10"
+				and (opcode = OP_LD
+				or   opcode = OP_LDF
+				or  (opcode = OP_3OP
+					and (sub_opcode = SUB_OP_LDX
+					or   sub_opcode = SUB_OP_LDFX)))
+		else '-';
+
 	dmem_src <= DMEM_SRC_GPR
 			when   (opcode = OP_SEND
 				or  opcode = OP_ST
@@ -239,14 +261,14 @@ begin
 					or   sub_opcode = SUB_OP_SL
 					or   sub_opcode = SUB_OP_SR)))
 		else REGS_SRC_CACHE
-			when   (wait_count /= "010"
+			when   (wait_count /= "10"
 				and (opcode = OP_LD
 				or   opcode = OP_LDF
 				or  (opcode = OP_3OP
 					and (sub_opcode = SUB_OP_LDX
 					or   sub_opcode = SUB_OP_LDFX))))
 		else REGS_SRC_DMEM
-			when   (wait_count = "010"
+			when   (wait_count = "10"
 				and (opcode = OP_LD
 				or   opcode = OP_LDF
 				or  (opcode = OP_3OP
@@ -295,13 +317,13 @@ begin
 	stall <= '1'
 		when (opcode = OP_SEND and sender_full = '1')
 		or   (opcode = OP_RECV and recver_empty = '1')
-		or  ((wait_count = "000" or (wait_count = "001" and cache_hit_miss = '0'))
+		or  ((wait_count = "00" or (wait_count = "01" and cache_hit_miss = '0'))
 			and (opcode = OP_LD
 			or   opcode = OP_LDF
 			or  (opcode = OP_3OP
 				and (sub_opcode = SUB_OP_LDX
 				or   sub_opcode = SUB_OP_LDFX))))
-		or (wait_count /= "010"	-- 3clk instructions
+		or (wait_count /= "10"	-- 3clk instructions
 			and (opcode = OP_FP
 				and (sub_opcode = SUB_OP_FADD
 				or   sub_opcode = SUB_OP_FSUB
@@ -319,8 +341,8 @@ begin
 			       (sub_opcode = SUB_OP_LDX    or
 			        sub_opcode = SUB_OP_LDFX))) then
 
-				if ((wait_count = "001" and cache_hit_miss = '1') or wait_count = "010") then
-						wait_count <= "000";
+				if ((wait_count = "01" and cache_hit_miss = '1') or wait_count = "10") then
+						wait_count <= "00";
 				else
 						wait_count <= wait_count + 1;
 				end if;
@@ -331,8 +353,8 @@ begin
 			        sub_opcode = SUB_OP_FMUL   or
 			        sub_opcode = SUB_OP_FINV)) then
 
-				if (wait_count = "010") then
-						wait_count <= "000";
+				if (wait_count = "10") then
+						wait_count <= "00";
 				else
 						wait_count <= wait_count + 1;
 				end if;

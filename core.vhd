@@ -235,6 +235,7 @@ architecture struct of core is
 			fpu_op             : out std_logic_vector (1 downto 0);
 			fadd_op            : out std_logic;
 			alu_src            : out std_logic;
+            cache_src          : out std_logic;
 			dmem_src           : out std_logic;
 			regs_src           : out std_logic_vector (3 downto 0);
 			lr_src             : out std_logic;
@@ -273,6 +274,8 @@ architecture struct of core is
 
     signal cache_write_enable : std_logic                      := '0';
     signal cache_address      : std_logic_vector (17 downto 0) := (others => '0');
+    signal cache_address1     : std_logic_vector (17 downto 0) := (others => '0');
+    signal cache_address2     : std_logic_vector (17 downto 0) := (others => '0');
     signal cache_data_in      : std_logic_vector (31 downto 0) := (others => '0');
     signal cache_data_out     : std_logic_vector (31 downto 0) := (others => '0');
     signal cache_hit_miss     : std_logic                      := '0';
@@ -334,12 +337,13 @@ architecture struct of core is
 	signal recver_empty : std_logic                      := '0';
 	signal recver_out   : std_logic_vector (31 downto 0) := (others => '0');
 
-	signal alu_src  : std_logic                     := ALU_SRC_GPR;
-	signal dmem_src : std_logic                     := DMEM_SRC_GPR;
-	signal regs_src : std_logic_vector (3 downto 0) := REGS_SRC_ALU;
-	signal lr_src   : std_logic                     := LR_SRC_PC;
-	signal ia_src   : std_logic_vector (1 downto 0) := IA_SRC_PC;
-	signal stall    : std_logic                     := '0';
+	signal alu_src   : std_logic                     := ALU_SRC_GPR;
+    signal cache_src : std_logic                     := CACHE_SRC_ST;
+	signal dmem_src  : std_logic                     := DMEM_SRC_GPR;
+	signal regs_src  : std_logic_vector (3 downto 0) := REGS_SRC_ALU;
+	signal lr_src    : std_logic                     := LR_SRC_PC;
+	signal ia_src    : std_logic_vector (1 downto 0) := IA_SRC_PC;
+	signal stall     : std_logic                     := '0';
 
 	signal selected_data : std_logic_vector (31 downto 0) := (others => '0');
 
@@ -385,8 +389,8 @@ begin
     cache : cache_memory port map (
         clk                => clk,
         cache_write_enable => cache_write_enable,
-        cache_address      => dmem_address(19 downto 2),
-        cache_data_in      => dmem_data_in,
+        cache_address      => cache_address,
+        cache_data_in      => cache_data_in,
         cache_data_out     => cache_data_out,
         cache_hit_miss     => cache_hit_miss
     );
@@ -518,6 +522,7 @@ begin
 		fpu_op             => fpu_op,
 		fadd_op            => fadd_op,
 		alu_src            => alu_src,
+        cache_src          => cache_src,
 		dmem_src           => dmem_src,
 		regs_src           => regs_src,
 		lr_src             => lr_src,
@@ -588,6 +593,22 @@ begin
 	cr_in_f <= fpu_cond;
 
 	ctr_in <= alu_out;
+
+    cache_address <=
+        cache_address2 when cache_src = CACHE_SRC_LD else
+        alu_out(19 downto 2);
+
+    process(clk)
+    begin
+        if (rising_edge(clk)) then
+            cache_address1 <= alu_out(19 downto 2);
+            cache_address2 <= cache_address1;
+        end if ;
+    end process;
+
+    cache_data_in <=
+        dmem_data_out when cache_src = CACHE_SRC_LD else
+        dmem_data_in;
 
 	dmem_address <= alu_out(19 downto 0);
 

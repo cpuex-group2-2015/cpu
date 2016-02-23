@@ -73,6 +73,9 @@ package types is
     constant ALU_SRC_GPR : std_logic := '0';
     constant ALU_SRC_EXT : std_logic := '1';
 
+    constant CACHE_SRC_ST : std_logic := '0';
+    constant CACHE_SRC_LD : std_logic := '1';
+
     constant DMEM_SRC_GPR : std_logic := '0';
     constant DMEM_SRC_FPR : std_logic := '1';
 

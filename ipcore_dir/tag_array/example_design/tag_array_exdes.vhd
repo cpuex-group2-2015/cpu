@@ -90,11 +90,11 @@ ENTITY tag_array_exdes IS
       --Inputs - Port A
   
     WEA            : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-    ADDRA          : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    ADDRA          : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
   
-    DINA           : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
+    DINA           : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
   
-    DOUTA          : OUT STD_LOGIC_VECTOR(9 DOWNTO 0);
+    DOUTA          : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
     CLKA       : IN STD_LOGIC
 
 
@@ -117,11 +117,11 @@ ARCHITECTURE xilinx OF tag_array_exdes IS
       --Port A
   
     WEA        : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-    ADDRA      : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    ADDRA      : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
   
-    DINA       : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
+    DINA       : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
   
-    DOUTA      : OUT STD_LOGIC_VECTOR(9 DOWNTO 0);
+    DOUTA      : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
 
     CLKA       : IN STD_LOGIC
 

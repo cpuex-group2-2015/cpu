@@ -19,9 +19,9 @@ architecture struct of cache_memory is
 		port (
 			clka  : in  std_logic;
 			wea   : in  std_logic_vector (0 downto 0);
-			addra : in  std_logic_vector (7 downto 0);
-			dina  : in  std_logic_vector (9 downto 0);
-			douta : out std_logic_vector (9 downto 0)
+			addra : in  std_logic_vector (9 downto 0);
+			dina  : in  std_logic_vector (7 downto 0);
+			douta : out std_logic_vector (7 downto 0)
 		);
 	end component;
 
@@ -29,18 +29,18 @@ architecture struct of cache_memory is
 		port (
 			clka  : in  std_logic;
 			wea   : in  std_logic_vector (0 downto 0);
-			addra : in  std_logic_vector (7 downto 0);
+			addra : in  std_logic_vector (9 downto 0);
 			dina  : in  std_logic_vector (31 downto 0);
 			douta : out std_logic_vector (31 downto 0)
 		);
 	end component;
 
-	signal tag1 : std_logic_vector (9 downto 0);
-	signal tag2 : std_logic_vector (9 downto 0);
+	signal tag1 : std_logic_vector (7 downto 0);
+	signal tag2 : std_logic_vector (7 downto 0);
 
-	signal index : std_logic_vector (7 downto 0);
+	signal index : std_logic_vector (9 downto 0);
 
-	type valid_t is array (255 downto 0) of std_logic;
+	type valid_t is array (1023 downto 0) of std_logic;
 	signal valid : valid_t := (others => '0');
 
 begin
@@ -48,15 +48,15 @@ begin
 	tary : tag_array port map (
 		clka   => clk,
 		wea(0) => cache_write_enable,
-		addra  => cache_address(7 downto 0),
-		dina   => cache_address(17 downto 8),
+		addra  => cache_address(9 downto 0),
+		dina   => cache_address(17 downto 10),
 		douta  => tag2
 	);
 
 	dary : data_array port map (
 		clka   => clk,
 		wea(0) => cache_write_enable,
-		addra  => cache_address(7 downto 0),
+		addra  => cache_address(9 downto 0),
 		dina   => cache_data_in,
 		douta  => cache_data_out
 	);
@@ -66,11 +66,11 @@ begin
 	process (clk)
 	begin
 		if (rising_edge(clk)) then
-			tag1  <= cache_address(17 downto 8);
-			index <= cache_address(7 downto 0);
+			tag1  <= cache_address(17 downto 10);
+			index <= cache_address(9 downto 0);
 
 			if cache_write_enable = '1' then
-				valid(conv_integer(cache_address(7 downto 0))) <= '1';
+				valid(conv_integer(cache_address(9 downto 0))) <= '1';
 			end if;
 		end if;
 	end process;
